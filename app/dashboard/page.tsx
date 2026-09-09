@@ -1,0 +1,32 @@
+'use client';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { Activity, LockKeyhole, MessageCircle, RefreshCw, Search, ShieldCheck, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+type Patient={id:string;lineUserId:string;displayName:string;urgency:'red'|'yellow'|'green';status:string;age:number|null;procedure:string|null;dischargeDay:number|null;updatedAt:string;messageCount:number};
+type Summary={patients:Patient[];assessments:{count:number;averageOverall:number;averageEase:number;averageUsefulness:number;positiveRate:number;distribution:{score:number;count:number}[]}};
+type Detail={patient:Patient;messages:{id:number;role:string;body:string;reason:string|null;createdAt:string}[]};
+const urgencyLabel={red:'เร่งด่วน',yellow:'เฝ้าระวัง',green:'ปกติ'}; const statusLabel:Record<string,string>={awaiting_staff:'รอเจ้าหน้าที่',in_progress:'กำลังติดตาม',resolved:'เรียบร้อย'};
+
+export default function Dashboard(){
+  const [data,setData]=useState<Summary|null>(null); const [needsLogin,setNeedsLogin]=useState(false); const [error,setError]=useState(''); const [query,setQuery]=useState(''); const [filter,setFilter]=useState('all'); const [detail,setDetail]=useState<Detail|null>(null);
+  const load=useCallback(async()=>{const response=await fetch('/api/dashboard',{cache:'no-store'});if(response.status===401){setNeedsLogin(true);return}if(!response.ok){setError('โหลดข้อมูลไม่สำเร็จ');return}setData(await response.json());setNeedsLogin(false);setError('')},[]);
+  useEffect(()=>{load();const timer=setInterval(load,5000);return()=>clearInterval(timer)},[load]);
+  async function login(event:FormEvent<HTMLFormElement>){event.preventDefault();const password=String(new FormData(event.currentTarget).get('password')||'');const response=await fetch('/api/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password})});if(response.ok)load();else setError('รหัสผ่านไม่ถูกต้อง')}
+  async function openPatient(id:string){const response=await fetch(`/api/patients/${id}`);if(response.ok)setDetail(await response.json())}
+  async function updateStatus(status:string){if(!detail)return;await fetch(`/api/patients/${detail.patient.id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({status})});await openPatient(detail.patient.id);await load()}
+  const patients=useMemo(()=>data?.patients.filter(p=>(filter==='all'||p.urgency===filter)&&`${p.displayName} ${p.lineUserId}`.toLowerCase().includes(query.toLowerCase()))||[],[data,filter,query]);
+  if(needsLogin)return <main className="login-page"><form className="login-card" onSubmit={login}><span><LockKeyhole/></span><p>CARE TEAM ONLY</p><h1>เข้าสู่ Dashboard</h1><label>รหัสผ่านเจ้าหน้าที่<Input name="password" type="password" required className="mt-2 h-11"/></label>{error&&<div className="error">{error}</div>}<Button className="h-11 w-full bg-[#176b87]">เข้าสู่ระบบ</Button><Link href="/">← กลับหน้าหลัก</Link></form></main>;
+  const red=data?.patients.filter(p=>p.urgency==='red').length||0; const waiting=data?.patients.filter(p=>p.status==='awaiting_staff').length||0;
+  return <main className="dashboard-page"><header className="dash-header"><div><p>CARE TEAM DASHBOARD</p><h1>ภาพรวมผู้ป่วย</h1><span>ข้อมูลใหม่จะแสดงอัตโนมัติทุก 5 วินาที</span></div><div><Button variant="outline" onClick={load}><RefreshCw/>รีเฟรช</Button><Link href="/">หน้าหลัก</Link></div></header>
+    {error&&<div className="error">{error}</div>}
+    <section className="metrics"><div><Users/><span>ผู้ป่วยทั้งหมด</span><b>{data?.patients.length||0}</b></div><div className="danger"><Activity/><span>เคสเร่งด่วน</span><b>{red}</b></div><div><ShieldCheck/><span>รอเจ้าหน้าที่</span><b>{waiting}</b></div><div><MessageCircle/><span>ผลประเมิน</span><b>{Number(data?.assessments.count||0)}</b></div></section>
+    <section className="satisfaction"><div><p>SATISFACTION SUMMARY</p><h2>สรุปผลประเมิน</h2></div><div className="big-score">{Number(data?.assessments.averageOverall||0).toFixed(1)}<span>/ 5</span></div><div><span>พึงพอใจระดับ 4–5</span><b>{Math.round(Number(data?.assessments.positiveRate||0))}%</b></div><div><span>ความง่าย</span><b>{Number(data?.assessments.averageEase||0).toFixed(1)}</b></div><div><span>ประโยชน์</span><b>{Number(data?.assessments.averageUsefulness||0).toFixed(1)}</b></div></section>
+    <section className="dash-tools"><div>{[['all','ทั้งหมด'],['red','เร่งด่วน'],['yellow','เฝ้าระวัง'],['green','ปกติ']].map(([key,label])=><button key={key} className={filter===key?'active':''} onClick={()=>setFilter(key)}>{label}</button>)}</div><label><Search/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="ค้นหาชื่อหรือ LINE ID"/></label></section>
+    <section className="patient-grid">{patients.length?patients.map(p=><article key={p.id} className="patient-card"><div className="patient-top"><span className="avatar">{p.displayName.charAt(0)}</span><div><h3>{p.displayName}</h3><p>{p.lineUserId.slice(0,10)}…</p></div><i className={p.urgency}>{urgencyLabel[p.urgency]}</i></div><div className="patient-info"><p><span>สถานะ</span><b>{statusLabel[p.status]}</b></p><p><span>ข้อความ</span><b>{p.messageCount} รายการ</b></p></div><Button variant="secondary" onClick={()=>openPatient(p.id)} className="w-full">เปิดรายละเอียด</Button></article>):<div className="empty-state"><MessageCircle/><h2>ยังไม่มีผู้ป่วยในระบบ</h2><p>เมื่อผู้ใช้เพิ่มเพื่อนและส่งข้อความผ่าน LINE การ์ดผู้ใช้จะปรากฏที่นี่</p></div>}</section>
+    <Dialog open={!!detail} onOpenChange={open=>!open&&setDetail(null)}><DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle className="text-xl">{detail?.patient.displayName}</DialogTitle><DialogDescription>{detail?.patient.lineUserId}</DialogDescription></DialogHeader><div className="status-row">{Object.entries(statusLabel).map(([key,label])=><Button key={key} variant={detail?.patient.status===key?'default':'outline'} onClick={()=>updateStatus(key)}>{label}</Button>)}</div><div className="messages">{detail?.messages.map(m=><div key={m.id} className={m.role==='user'?'msg user':'msg bot'}><b>{m.role==='user'?'ผู้ป่วย':'ระบบ'}</b><p>{m.body}</p>{m.reason&&<small>{m.reason}</small>}</div>)}</div></DialogContent></Dialog>
+  </main>
+}

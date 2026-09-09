@@ -98,7 +98,7 @@ async function handleProfile(patient: Record<string, unknown>, text: string) {
 }
 
 export async function POST(request: Request) {
-  const { lineSecret } = getRuntimeConfig();
+  const { lineSecret, nursePhone } = getRuntimeConfig();
   if (!lineSecret) return Response.json({ error: 'LINE is not configured' }, { status: 503 });
   const raw = await request.arrayBuffer();
   const signature = request.headers.get('x-line-signature') || '';
@@ -120,7 +120,10 @@ export async function POST(request: Request) {
     await db.prepare(`insert into messages (patient_id, role, body, created_at) values (?, 'user', ?, ?)`).bind(patient.id, text, now).run();
 
     let reply: { text: string; choices: string[]; urgency?: string; reason?: string };
-    if (text === 'กรอกประวัติ') {
+    if (text === 'ติดต่อพยาบาลเร่งด่วน' || text === 'ติดต่อพยาบาล') {
+      await db.prepare(`update patients set urgency = 'red', status = 'awaiting_staff', updated_at = ? where id = ?`).bind(now, patient.id).run();
+      reply = { text: `กรุณาติดต่อพยาบาลที่ ${nursePhone} หากมีอาการรุนแรงหรือฉุกเฉินให้ไปห้องฉุกเฉินหรือโทร 1669 ทันที`, choices: [], urgency: 'red', reason: 'ผู้ใช้เลือกติดต่อเร่งด่วน' };
+    } else if (text === 'กรอกประวัติ') {
       await db.prepare(`update patients set intake_field = 'profile_name', intake_json = '{}', updated_at = ? where id = ?`).bind(now, patient.id).run();
       reply = { text: 'กรุณาพิมพ์ชื่อและนามสกุลของผู้ป่วยค่ะ', choices: [] };
     } else if (text === 'แจ้งอาการ') {

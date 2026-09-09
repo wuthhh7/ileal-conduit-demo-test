@@ -1,6 +1,5 @@
 'use client';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { Activity, LockKeyhole, MessageCircle, RefreshCw, Search, ShieldCheck, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,9 +18,9 @@ export default function Dashboard(){
   async function openPatient(id:string){const response=await fetch(`/api/patients/${id}`);if(response.ok)setDetail(await response.json())}
   async function updateStatus(status:string){if(!detail)return;await fetch(`/api/patients/${detail.patient.id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({status})});await openPatient(detail.patient.id);await load()}
   const patients=useMemo(()=>data?.patients.filter(p=>(filter==='all'||p.urgency===filter)&&`${p.displayName} ${p.lineUserId}`.toLowerCase().includes(query.toLowerCase()))||[],[data,filter,query]);
-  if(needsLogin)return <main className="login-page"><form className="login-card" onSubmit={login}><span><LockKeyhole/></span><p>CARE TEAM ONLY</p><h1>เข้าสู่ Dashboard</h1><label>รหัสผ่านเจ้าหน้าที่<Input name="password" type="password" required className="mt-2 h-11"/></label>{error&&<div className="error">{error}</div>}<Button className="h-11 w-full bg-[#176b87]">เข้าสู่ระบบ</Button><Link href="/">← กลับหน้าหลัก</Link></form></main>;
+  if(needsLogin)return <main className="login-page"><form className="login-card" onSubmit={login}><span><LockKeyhole/></span><p>CARE TEAM ONLY</p><h1>เข้าสู่ Dashboard</h1><label>รหัสผ่านเจ้าหน้าที่<Input name="password" type="password" required className="mt-2 h-11"/></label>{error&&<div className="error">{error}</div>}<Button className="h-11 w-full bg-[#176b87]">เข้าสู่ระบบ</Button></form></main>;
   const red=data?.patients.filter(p=>p.urgency==='red').length||0; const waiting=data?.patients.filter(p=>p.status==='awaiting_staff').length||0;
-  return <main className="dashboard-page"><header className="dash-header"><div><p>CARE TEAM DASHBOARD</p><h1>ภาพรวมผู้ป่วย</h1><span>ข้อมูลใหม่จะแสดงอัตโนมัติทุก 5 วินาที</span></div><div><Button variant="outline" onClick={load}><RefreshCw/>รีเฟรช</Button><Link href="/">หน้าหลัก</Link></div></header>
+  return <main className="dashboard-page"><header className="dash-header"><div><p>CARE TEAM DASHBOARD</p><h1>ภาพรวมผู้ป่วย</h1><span>ข้อมูลใหม่จะแสดงอัตโนมัติทุก 5 วินาที</span></div><div><Button variant="outline" onClick={load}><RefreshCw/>รีเฟรช</Button></div></header>
     {error&&<div className="error">{error}</div>}
     <section className="metrics"><div><Users/><span>ผู้ป่วยทั้งหมด</span><b>{data?.patients.length||0}</b></div><div className="danger"><Activity/><span>เคสเร่งด่วน</span><b>{red}</b></div><div><ShieldCheck/><span>รอเจ้าหน้าที่</span><b>{waiting}</b></div><div><MessageCircle/><span>ผลประเมิน</span><b>{Number(data?.assessments.count||0)}</b></div></section>
     <section className="satisfaction"><div><p>SATISFACTION SUMMARY</p><h2>สรุปผลประเมิน</h2></div><div className="big-score">{Number(data?.assessments.averageOverall||0).toFixed(1)}<span>/ 5</span></div><div><span>พึงพอใจระดับ 4–5</span><b>{Math.round(Number(data?.assessments.positiveRate||0))}%</b></div><div><span>ความง่าย</span><b>{Number(data?.assessments.averageEase||0).toFixed(1)}</b></div><div><span>ประโยชน์</span><b>{Number(data?.assessments.averageUsefulness||0).toFixed(1)}</b></div></section>

@@ -6,8 +6,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const { id } = await context.params;
   const db = getD1();
   const [patient, messages] = await Promise.all([
-    db.prepare(`select id, line_user_id as lineUserId, display_name as displayName, urgency, status, age, procedure, discharge_day as dischargeDay, updated_at as updatedAt from patients where id = ?`).bind(id).first(),
-    db.prepare(`select id, role, body, reason, created_at as createdAt from messages where patient_id = ? order by id asc`).bind(id).all(),
+    db.prepare(`select id, line_user_id as "lineUserId", display_name as "displayName", urgency, status, age, procedure, discharge_day as "dischargeDay", updated_at as "updatedAt" from patients where id = ?`).bind(id).first(),
+    db.prepare(`select id, role, body, reason, created_at as "createdAt" from messages where patient_id = ? order by id asc`).bind(id).all(),
   ]);
   if (!patient) return Response.json({ error: 'ไม่พบผู้ใช้' }, { status: 404 });
   return Response.json({ patient, messages: messages.results });

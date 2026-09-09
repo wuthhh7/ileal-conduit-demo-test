@@ -51,5 +51,7 @@ export function getRuntimeConfig() {
     dashboardPassword: process.env.DASHBOARD_PASSWORD || 'demo1234',
     nursePhone: process.env.NURSE_PHONE || 'รอระบุเบอร์พยาบาล',
     publicBaseUrl: process.env.PUBLIC_BASE_URL || '',
+    liffProfileUrl: process.env.LIFF_PROFILE_URL || 'https://liff.line.me/2011529300-4sP0rLxd',
+    liffSymptomUrl: process.env.LIFF_SYMPTOM_URL || 'https://liff.line.me/2011529300-zJ1dVPeY',
   };
 }

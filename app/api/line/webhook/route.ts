@@ -39,7 +39,7 @@ async function replyLine(replyToken: string | undefined, messages: unknown[]) {
   if (!response.ok) console.error('LINE reply failed', response.status, await response.text());
 }
 
-function welcomeFlex() {
+function welcomeFlex(profileUrl: string, symptomUrl: string) {
   return {
     type: 'flex',
     altText: 'กรอกประวัติหรือแจ้งอาการ',
@@ -49,12 +49,12 @@ function welcomeFlex() {
         { type: 'bubble', body: { type: 'box', layout: 'vertical', spacing: 'md', contents: [
           { type: 'text', text: 'กรอกประวัติ', weight: 'bold', size: 'xl', color: '#183153' },
           { type: 'text', text: 'บันทึกข้อมูลพื้นฐานก่อนเริ่มติดตามอาการ', wrap: true, color: '#66758a' },
-          { type: 'button', style: 'primary', color: '#176b87', action: { type: 'message', label: 'เริ่มกรอกประวัติ', text: 'กรอกประวัติ' } },
+          { type: 'button', style: 'primary', color: '#176b87', action: { type: 'uri', label: 'เปิดแบบฟอร์ม', uri: profileUrl } },
         ] } },
         { type: 'bubble', body: { type: 'box', layout: 'vertical', spacing: 'md', contents: [
           { type: 'text', text: 'แจ้งอาการ', weight: 'bold', size: 'xl', color: '#183153' },
           { type: 'text', text: 'ระบบจะตรวจข้อมูลและถามส่วนที่ยังขาด', wrap: true, color: '#66758a' },
-          { type: 'button', style: 'primary', color: '#15a394', action: { type: 'message', label: 'เริ่มแจ้งอาการ', text: 'แจ้งอาการ' } },
+          { type: 'button', style: 'primary', color: '#15a394', action: { type: 'uri', label: 'เปิดแบบฟอร์ม', uri: symptomUrl } },
         ] } },
       ],
     },
@@ -98,7 +98,7 @@ async function handleProfile(patient: Record<string, unknown>, text: string) {
 }
 
 export async function POST(request: Request) {
-  const { lineSecret, nursePhone } = getRuntimeConfig();
+  const { lineSecret, nursePhone, liffProfileUrl, liffSymptomUrl } = getRuntimeConfig();
   if (!lineSecret) return Response.json({ error: 'LINE is not configured' }, { status: 503 });
   const raw = await request.arrayBuffer();
   const signature = request.headers.get('x-line-signature') || '';
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
     const patient = await ensurePatient(event.source.userId);
     if (!patient) continue;
     if (event.type === 'follow') {
-      await replyLine(event.replyToken, [welcomeFlex()]);
+      await replyLine(event.replyToken, [welcomeFlex(liffProfileUrl, liffSymptomUrl)]);
       continue;
     }
     if (event.type !== 'message' || event.message?.type !== 'text') continue;
@@ -120,15 +120,13 @@ export async function POST(request: Request) {
     await db.prepare(`insert into messages (patient_id, role, body, created_at) values (?, 'user', ?, ?)`).bind(patient.id, text, now).run();
 
     let reply: { text: string; choices: string[]; urgency?: string; reason?: string };
-    if (text === 'ติดต่อพยาบาลเร่งด่วน' || text === 'ติดต่อพยาบาล') {
+    if (text === 'เมนู' || text === 'กรอกประวัติ' || text === 'แจ้งอาการ') {
+      await db.prepare(`insert into messages (patient_id, role, body, reason, created_at) values (?, 'bot', 'เปิดเมนูแบบฟอร์ม LIFF', 'แสดงเมนู', ?)`).bind(patient.id, now).run();
+      await replyLine(event.replyToken, [welcomeFlex(liffProfileUrl, liffSymptomUrl)]);
+      continue;
+    } else if (text === 'ติดต่อพยาบาลเร่งด่วน' || text === 'ติดต่อพยาบาล') {
       await db.prepare(`update patients set urgency = 'red', status = 'awaiting_staff', updated_at = ? where id = ?`).bind(now, patient.id).run();
       reply = { text: `กรุณาติดต่อพยาบาลที่ ${nursePhone} หากมีอาการรุนแรงหรือฉุกเฉินให้ไปห้องฉุกเฉินหรือโทร 1669 ทันที`, choices: [], urgency: 'red', reason: 'ผู้ใช้เลือกติดต่อเร่งด่วน' };
-    } else if (text === 'กรอกประวัติ') {
-      await db.prepare(`update patients set intake_field = 'profile_name', intake_json = '{}', updated_at = ? where id = ?`).bind(now, patient.id).run();
-      reply = { text: 'กรุณาพิมพ์ชื่อและนามสกุลของผู้ป่วยค่ะ', choices: [] };
-    } else if (text === 'แจ้งอาการ') {
-      await db.prepare(`update patients set intake_field = 'symptom', intake_json = '{}', updated_at = ? where id = ?`).bind(now, patient.id).run();
-      reply = { text: 'กรุณาเล่าอาการที่พบให้ละเอียดที่สุด เช่น ปวดบริเวณใด ปัสสาวะเป็นอย่างไร หรือแผลมีความผิดปกติอย่างไร', choices: [] };
     } else if (String(patient.intake_field || '').startsWith('profile_')) {
       reply = await handleProfile(patient, text);
     } else if (patient.intake_field) {

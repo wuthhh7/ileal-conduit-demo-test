@@ -4,10 +4,11 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({})) as { password?: string };
   const token = await createDashboardSession(String(body.password || ''));
   if (!token) return Response.json({ error: 'รหัสผ่านไม่ถูกต้อง' }, { status: 401 });
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
   return new Response(JSON.stringify({ ok: true }), {
     headers: {
       'content-type': 'application/json',
-      'set-cookie': `dashboard_session=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=28800`,
+      'set-cookie': `dashboard_session=${token}; Path=/; HttpOnly${secure}; SameSite=Lax; Max-Age=28800`,
     },
   });
 }

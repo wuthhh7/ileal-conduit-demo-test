@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS patients (
   status text NOT NULL DEFAULT 'awaiting_staff',
   age integer,
   procedure text,
+  discharge_date text,
   discharge_day integer,
   intake_field text,
   intake_json text NOT NULL DEFAULT '{}',
@@ -33,3 +34,5 @@ CREATE TABLE IF NOT EXISTS assessments (
 
 CREATE INDEX IF NOT EXISTS messages_patient_id_idx ON messages(patient_id);
 CREATE INDEX IF NOT EXISTS patients_updated_at_idx ON patients(updated_at DESC);
+
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS discharge_date text;

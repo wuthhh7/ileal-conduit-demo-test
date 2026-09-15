@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, CheckCircle2, CircleAlert, Clock3, MoreHorizontal, ShieldCheck, Tickets } from 'lucide-react';
+import { ArrowRight, CheckCircle2, CircleAlert, Clock3, History, ShieldCheck, Tickets } from 'lucide-react';
 import { DashboardLogin } from './dashboard-login';
 import { DashboardShell } from './dashboard-shell';
-import { shortSymptom, statusLabel, thaiDate, urgencyLabel } from './types';
+import { thaiDate, urgencyLabel } from './types';
 import { useDashboardData } from './use-dashboard-data';
 import styles from './dashboard.module.css';
 
@@ -17,12 +17,19 @@ export function DashboardAnalytics() {
   const answered = issues.filter((issue) => issue.status === 'answered').length;
   const unanswered = issues.filter((issue) => issue.status === 'unanswered').length;
   const urgent = issues.filter((issue) => issue.status === 'unanswered' && issue.urgency === 'red').length;
+  const reportingPatients = new Set(issues.map((issue) => issue.patientId)).size;
   const attention = issues.filter((issue) => issue.status === 'unanswered').sort((a, b) => {
     const weight = { red: 3, yellow: 2, green: 1 };
     const score = (issue: typeof a) => weight[issue.urgency];
     return score(b) - score(a) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   }).slice(0, 4);
-  const latestPatients = [...patients].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 5);
+  const latestPatients = patients.map((patient) => {
+    const patientIssues = issues.filter((issue) => issue.patientId === patient.id);
+    const latestIssueAt = patientIssues.reduce<string | null>((latest, issue) => !latest || new Date(issue.createdAt) > new Date(latest) ? issue.createdAt : latest, null);
+    return { ...patient, issueCount: patientIssues.length, latestIssueAt };
+  }).filter((patient) => patient.issueCount > 0)
+    .sort((a, b) => new Date(b.latestIssueAt || 0).getTime() - new Date(a.latestIssueAt || 0).getTime())
+    .slice(0, 10);
 
   const days = Array.from({ length: 7 }, (_, index) => {
     const date = new Date();
@@ -56,7 +63,7 @@ export function DashboardAnalytics() {
   return <DashboardShell title="แดชบอร์ด" description="ภาพรวมปัญหาที่ผู้ป่วยแจ้งและสถานะการตอบกลับของพยาบาล" onRefresh={load}>
     {error && <div className={styles.error}>{error}</div>}
     <section className={styles.dashboardKpis}>
-      <Kpi icon={<Tickets/>} label="ปัญหาทั้งหมด" value={issues.length} note={`จากผู้ป่วย ${patients.length} ราย`}/>
+      <Kpi icon={<Tickets/>} label="ปัญหาทั้งหมด" value={issues.length} note={`จากผู้ป่วย ${reportingPatients} ราย`}/>
       <Kpi icon={<CheckCircle2/>} label="ตอบกลับแล้ว" value={answered} note="ส่งคำตอบเข้า LINE แล้ว"/>
       <Kpi icon={<Clock3/>} label="ยังไม่ตอบกลับ" value={unanswered} note="รอพยาบาลตอบกลับ" tone="warning"/>
       <Kpi icon={<CircleAlert/>} label="เรื่องเร่งด่วน" value={urgent} note="ยังรอคำตอบ" tone="danger"/>
@@ -89,8 +96,8 @@ export function DashboardAnalytics() {
       </section>
 
       <section className={`${styles.dashboardCard} ${styles.overviewTableCard}`}>
-        <header><div><small>อัปเดตล่าสุด</small><h2>ภาพรวมผู้ป่วย</h2></div><Link href="/dashboard/patients">ดูผู้ป่วยทั้งหมด<ArrowRight/></Link></header>
-        {latestPatients.length ? <div className={styles.dashboardTableWrap}><table className={styles.dashboardTable}><caption className={styles.srOnly}>ภาพรวมผู้ป่วยที่อัปเดตล่าสุด</caption><thead><tr><th scope="col">ผู้ป่วย</th><th scope="col">อายุ</th><th scope="col">การรักษา / หัตถการ</th><th scope="col">อาการล่าสุด</th><th scope="col">ความเร่งด่วน</th><th scope="col">สถานะ</th><th scope="col">รายละเอียด</th></tr></thead><tbody>{latestPatients.map((patient) => <tr key={patient.id}><th scope="row" aria-label={`ผู้ป่วย ${patient.displayName}`}><div className={styles.tablePatient}><span className={styles.tableAvatar}>{patient.displayName.charAt(0) || '?'}</span><div><b>{patient.displayName}</b><small>อัปเดต {thaiDate(patient.updatedAt)}</small></div></div></th><td>{patient.age ? `${patient.age} ปี` : 'ไม่ระบุ'}</td><td>{patient.procedure || 'ยังไม่ระบุ'}</td><td>{shortSymptom(patient.symptomSummary)}</td><td><span className={`${styles.tableBadge} ${styles[patient.urgency]}`}>{urgencyLabel[patient.urgency]}</span></td><td><span className={`${styles.statusDot} ${styles[patient.status]}`}>{statusLabel[patient.status] || patient.status}</span></td><td><Link href={`/dashboard/patients/${patient.id}`} className={styles.rowAction} aria-label={`ดูรายละเอียด ${patient.displayName}`}><MoreHorizontal/></Link></td></tr>)}</tbody></table></div> : <div className={styles.compactEmpty}>ยังไม่มีข้อมูลผู้ป่วย</div>}
+        <header><div><small>10 คนล่าสุดที่แจ้งปัญหา</small><h2>ภาพรวมผู้ป่วย</h2></div><Link href="/dashboard/patients">ดูผู้ป่วยทั้งหมด<ArrowRight/></Link></header>
+        {latestPatients.length ? <div className={styles.dashboardTableWrap}><table className={styles.dashboardTable}><caption className={styles.srOnly}>ผู้ป่วย 10 คนล่าสุดที่แจ้งปัญหา</caption><thead><tr><th scope="col">ชื่อ</th><th scope="col">อายุ</th><th scope="col">วันที่แจ้งปัญหาล่าสุด</th><th scope="col">จำนวนครั้งการแจ้งปัญหา</th><th scope="col">ประวัติการแจ้งปัญหา</th></tr></thead><tbody>{latestPatients.map((patient) => <tr key={patient.id}><th scope="row" aria-label={`ผู้ป่วย ${patient.displayName}`}><div className={styles.tablePatient}><span className={styles.tableAvatar}>{patient.displayName.charAt(0) || '?'}</span><div><b>{patient.displayName}</b></div></div></th><td>{patient.age ? `${patient.age} ปี` : 'ไม่ระบุ'}</td><td>{thaiDate(patient.latestIssueAt)}</td><td><span className={styles.issueCount}>{patient.issueCount} ครั้ง</span></td><td><Link href={`/dashboard/patients/${patient.id}`} className={styles.historyAction} aria-label={`ดูประวัติการแจ้งปัญหาของ ${patient.displayName}`}><History/>ดูประวัติ</Link></td></tr>)}</tbody></table></div> : <div className={styles.compactEmpty}>ยังไม่มีผู้ป่วยแจ้งปัญหา</div>}
       </section>
     </>}
   </DashboardShell>;

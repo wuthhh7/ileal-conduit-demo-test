@@ -10,20 +10,13 @@ import { shortSymptom, statusLabel, thaiDate, urgencyLabel } from './types';
 import { useDashboardData } from './use-dashboard-data';
 import styles from './dashboard.module.css';
 
-type DirectoryView = 'all' | 'accepted' | 'unaccepted';
-
 const PAGE_SIZE = 8;
-const pageCopy: Record<DirectoryView, { title: string; description: string }> = {
-  all: { title: 'ผู้ป่วย', description: 'ข้อมูลผู้ป่วยทั้งหมดและสถานะการติดตามล่าสุด' },
-  accepted: { title: 'เคสที่รับเรื่อง', description: 'ผู้ป่วยที่เจ้าหน้าที่กำลังติดตามหรือดำเนินการเรียบร้อยแล้ว' },
-  unaccepted: { title: 'ยังไม่รับเรื่อง', description: 'ผู้ป่วยที่กำลังรอเจ้าหน้าที่ตรวจสอบและรับเรื่อง' },
-};
 
 function csvCell(value: string | number | null) {
   return `"${String(value ?? '').replaceAll('"', '""')}"`;
 }
 
-export function PatientDirectory({ view = 'all' }: { view?: DirectoryView }) {
+export function PatientDirectory() {
   const { data, needsLogin, error, loading, load } = useDashboardData();
   const [query, setQuery] = useState('');
   const [urgency, setUrgency] = useState<'all' | Urgency>('all');
@@ -32,12 +25,11 @@ export function PatientDirectory({ view = 'all' }: { view?: DirectoryView }) {
   const patients = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('th');
     return (data?.patients || []).filter((patient) => {
-      const matchesView = view === 'all' || (view === 'accepted' ? patient.status !== 'awaiting_staff' : patient.status === 'awaiting_staff');
       const matchesUrgency = urgency === 'all' || patient.urgency === urgency;
       const haystack = [patient.displayName, patient.procedure, shortSymptom(patient.symptomSummary)].join(' ').toLocaleLowerCase('th');
-      return matchesView && matchesUrgency && (!normalized || haystack.includes(normalized));
+      return matchesUrgency && (!normalized || haystack.includes(normalized));
     });
-  }, [data, query, urgency, view]);
+  }, [data, query, urgency]);
 
   const totalPages = Math.max(1, Math.ceil(patients.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -50,15 +42,13 @@ export function PatientDirectory({ view = 'all' }: { view?: DirectoryView }) {
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `patients-${view}.csv`;
+    anchor.download = 'patients.csv';
     anchor.click();
     URL.revokeObjectURL(url);
   }
 
   if (needsLogin) return <DashboardLogin onSuccess={load}/>;
-  const copy = pageCopy[view];
-
-  return <DashboardShell title={copy.title} description={copy.description} onRefresh={load}>
+  return <DashboardShell title="ผู้ป่วย" description="ข้อมูลผู้ป่วยทั้งหมดและสถานะการติดตามล่าสุด" onRefresh={load}>
     {error && <div className={styles.error}>{error}</div>}
     <section className={styles.tablePanel}>
       <div className={styles.tableToolbar}>

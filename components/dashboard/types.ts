@@ -27,7 +27,23 @@ export type Assessment = {
   recent: { id: number; overall: number; ease: number; usefulness: number; comment: string | null; createdAt: string }[];
 };
 
-export type DashboardSummary = { patients: Patient[]; assessments: Assessment };
+export type Issue = {
+  id: string;
+  patientId: string;
+  lineUserId: string;
+  displayName: string;
+  subject: string;
+  category: string;
+  detail: string;
+  onset: string | null;
+  urgency: Urgency;
+  status: 'unanswered' | 'answered';
+  replyText: string | null;
+  createdAt: string;
+  repliedAt: string | null;
+};
+
+export type DashboardSummary = { patients: Patient[]; assessments: Assessment; issues: Issue[] };
 export type PatientDetailData = { patient: Patient; messages: { id: number; role: string; body: string; reason: string | null; createdAt: string }[] };
 
 export const urgencyLabel: Record<Urgency, string> = { red: 'เร่งด่วน', yellow: 'เฝ้าระวัง', green: 'ปกติ' };

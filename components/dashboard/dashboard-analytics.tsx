@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, CircleAlert, Clock3, MoreHorizontal, ShieldCheck, UserCheck, UsersRound } from 'lucide-react';
+import { ArrowRight, CheckCircle2, CircleAlert, Clock3, MoreHorizontal, ShieldCheck, Tickets } from 'lucide-react';
 import { DashboardLogin } from './dashboard-login';
 import { DashboardShell } from './dashboard-shell';
 import { shortSymptom, statusLabel, thaiDate, urgencyLabel } from './types';
@@ -13,15 +13,15 @@ export function DashboardAnalytics() {
   if (needsLogin) return <DashboardLogin onSuccess={load}/>;
 
   const patients = data?.patients || [];
-  const accepted = patients.filter((patient) => patient.status !== 'awaiting_staff').length;
-  const waiting = patients.filter((patient) => patient.status === 'awaiting_staff').length;
-  const urgent = patients.filter((patient) => patient.urgency === 'red').length;
-  const inProgress = patients.filter((patient) => patient.status === 'in_progress').length;
-  const attention = [...patients].sort((a, b) => {
+  const issues = data?.issues || [];
+  const answered = issues.filter((issue) => issue.status === 'answered').length;
+  const unanswered = issues.filter((issue) => issue.status === 'unanswered').length;
+  const urgent = issues.filter((issue) => issue.status === 'unanswered' && issue.urgency === 'red').length;
+  const attention = issues.filter((issue) => issue.status === 'unanswered').sort((a, b) => {
     const weight = { red: 3, yellow: 2, green: 1 };
-    const score = (patient: typeof a) => weight[patient.urgency] * 10 + (patient.status === 'awaiting_staff' ? 2 : patient.status === 'in_progress' ? 1 : 0);
-    return score(b) - score(a) || new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-  }).filter((patient) => patient.status !== 'resolved' || patient.urgency !== 'green').slice(0, 4);
+    const score = (issue: typeof a) => weight[issue.urgency];
+    return score(b) - score(a) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  }).slice(0, 4);
   const latestPatients = [...patients].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 5);
 
   const days = Array.from({ length: 7 }, (_, index) => {
@@ -30,14 +30,14 @@ export function DashboardAnalytics() {
     date.setDate(date.getDate() - (6 - index));
     const next = new Date(date);
     next.setDate(next.getDate() + 1);
-    const added = patients.filter((patient) => {
-      const created = new Date(patient.createdAt);
+    const added = issues.filter((issue) => {
+      const created = new Date(issue.createdAt);
       return created >= date && created < next;
     });
     return {
       label: new Intl.DateTimeFormat('th-TH', { weekday: 'short', timeZone: 'Asia/Bangkok' }).format(date),
       total: added.length,
-      urgent: added.filter((patient) => patient.urgency === 'red').length,
+      urgent: added.filter((issue) => issue.urgency === 'red').length,
     };
   });
   const chartMax = Math.max(...days.flatMap((day) => [day.total, day.urgent]), 1);
@@ -46,27 +46,28 @@ export function DashboardAnalytics() {
     const y = 180 - (day[field] / chartMax) * 130;
     return `${x},${y}`;
   }).join(' ');
-  const greenCount = patients.filter((patient) => patient.urgency === 'green').length;
-  const yellowCount = patients.filter((patient) => patient.urgency === 'yellow').length;
-  const greenPercent = patients.length ? (greenCount / patients.length) * 100 : 0;
-  const yellowPercent = patients.length ? (yellowCount / patients.length) * 100 : 0;
-  const donut = patients.length ? `conic-gradient(#55a985 0 ${greenPercent}%, #d99a28 ${greenPercent}% ${greenPercent + yellowPercent}%, #d55757 ${greenPercent + yellowPercent}% 100%)` : '#e8eef0';
+  const greenCount = issues.filter((issue) => issue.urgency === 'green').length;
+  const yellowCount = issues.filter((issue) => issue.urgency === 'yellow').length;
+  const redCount = issues.filter((issue) => issue.urgency === 'red').length;
+  const greenPercent = issues.length ? (greenCount / issues.length) * 100 : 0;
+  const yellowPercent = issues.length ? (yellowCount / issues.length) * 100 : 0;
+  const donut = issues.length ? `conic-gradient(#55a985 0 ${greenPercent}%, #d99a28 ${greenPercent}% ${greenPercent + yellowPercent}%, #d55757 ${greenPercent + yellowPercent}% 100%)` : '#e8eef0';
 
-  return <DashboardShell title="แดชบอร์ด" description="ภาพรวมข้อมูลผู้ป่วยและสถานะที่พยาบาลควรติดตาม" onRefresh={load}>
+  return <DashboardShell title="แดชบอร์ด" description="ภาพรวมปัญหาที่ผู้ป่วยแจ้งและสถานะการตอบกลับของพยาบาล" onRefresh={load}>
     {error && <div className={styles.error}>{error}</div>}
     <section className={styles.dashboardKpis}>
-      <Kpi icon={<UsersRound/>} label="ผู้ป่วยทั้งหมด" value={patients.length} note="รายในระบบ"/>
-      <Kpi icon={<UserCheck/>} label="รับเรื่องแล้ว" value={accepted} note={`${inProgress} รายกำลังติดตาม`}/>
-      <Kpi icon={<Clock3/>} label="ยังไม่รับเรื่อง" value={waiting} note="รอเจ้าหน้าที่ตรวจสอบ" tone="warning"/>
-      <Kpi icon={<CircleAlert/>} label="เคสเร่งด่วน" value={urgent} note="ควรตรวจสอบก่อน" tone="danger"/>
+      <Kpi icon={<Tickets/>} label="ปัญหาทั้งหมด" value={issues.length} note={`จากผู้ป่วย ${patients.length} ราย`}/>
+      <Kpi icon={<CheckCircle2/>} label="ตอบกลับแล้ว" value={answered} note="ส่งคำตอบเข้า LINE แล้ว"/>
+      <Kpi icon={<Clock3/>} label="ยังไม่ตอบกลับ" value={unanswered} note="รอพยาบาลตอบกลับ" tone="warning"/>
+      <Kpi icon={<CircleAlert/>} label="เรื่องเร่งด่วน" value={urgent} note="ยังรอคำตอบ" tone="danger"/>
     </section>
 
     {loading && !data ? <div className={styles.loadingRows}><i/><i/><i/></div> : <>
       <section className={styles.dashboardMainGrid}>
         <article className={`${styles.dashboardCard} ${styles.trendCard}`}>
-          <header><div><small>7 วันล่าสุด</small><h2>แนวโน้มผู้ป่วยใหม่</h2></div><div className={styles.chartLegend}><span><i/>ผู้ป่วยใหม่</span><span><i/>เคสเร่งด่วน</span></div></header>
+          <header><div><small>7 วันล่าสุด</small><h2>แนวโน้มปัญหาที่แจ้งเข้ามา</h2></div><div className={styles.chartLegend}><span><i/>เรื่องใหม่</span><span><i/>เรื่องเร่งด่วน</span></div></header>
           <div className={styles.lineChart}>
-            <svg viewBox="0 0 700 220"><title>กราฟผู้ป่วยใหม่และเคสเร่งด่วนในช่วง 7 วันล่าสุด</title>
+            <svg viewBox="0 0 700 220"><title>กราฟเรื่องที่ผู้ป่วยแจ้งและเรื่องเร่งด่วนในช่วง 7 วันล่าสุด</title>
               {[50, 115, 180].map((y) => <line key={y} x1="30" x2="670" y1={y} y2={y} className={styles.chartGridLine}/>) }
               <polyline points={`30,180 ${points('total')} 670,180`} className={styles.chartArea}/>
               <polyline points={points('total')} className={styles.chartLinePrimary}/>
@@ -77,13 +78,13 @@ export function DashboardAnalytics() {
         </article>
 
         <article className={`${styles.dashboardCard} ${styles.attentionCard}`}>
-          <header><div><small>เรียงตามความสำคัญ</small><h2>เคสที่ควรตรวจสอบ</h2></div><Link href="/dashboard/patients/unaccepted">ดูทั้งหมด<ArrowRight/></Link></header>
-          <div className={styles.attentionList}>{attention.length ? attention.map((patient) => <Link href={`/dashboard/patients/${patient.id}`} key={patient.id}><span className={styles.miniAvatar}>{patient.displayName.charAt(0) || '?'}</span><div><b>{patient.displayName}</b><small>{shortSymptom(patient.symptomSummary)}</small></div><span className={`${styles.tableBadge} ${styles[patient.urgency]}`}>{urgencyLabel[patient.urgency]}</span></Link>) : <div className={styles.compactEmpty}><ShieldCheck/>ไม่มีเคสที่ต้องติดตาม</div>}</div>
+          <header><div><small>เรียงตามความสำคัญ</small><h2>เรื่องที่รอคำตอบ</h2></div><Link href="/dashboard/issues/unanswered">ดูทั้งหมด<ArrowRight/></Link></header>
+          <div className={styles.attentionList}>{attention.length ? attention.map((issue) => <Link href={`/dashboard/issues/unanswered#issue-${issue.id}`} key={issue.id}><span className={styles.miniAvatar}>{issue.displayName.charAt(0) || '?'}</span><div><b>{issue.subject}</b><small>{issue.displayName}</small></div><span className={`${styles.tableBadge} ${styles[issue.urgency]}`}>{urgencyLabel[issue.urgency]}</span></Link>) : <div className={styles.compactEmpty}><ShieldCheck/>ไม่มีเรื่องที่รอคำตอบ</div>}</div>
         </article>
 
         <article className={`${styles.dashboardCard} ${styles.statusCard}`}>
-          <header><div><small>สถานะปัจจุบัน</small><h2>ระดับความเร่งด่วน</h2></div></header>
-          <div className={styles.donutLayout}><div className={styles.donutChart} style={{ background: donut }}><span><b>{patients.length}</b><small>ทั้งหมด</small></span></div><div className={styles.donutLegend}><span><i className={styles.legendGreen}/>ปกติ <b>{greenCount}</b></span><span><i className={styles.legendYellow}/>เฝ้าระวัง <b>{yellowCount}</b></span><span><i className={styles.legendRed}/>เร่งด่วน <b>{urgent}</b></span></div></div>
+          <header><div><small>ปัญหาทั้งหมด</small><h2>ระดับความเร่งด่วน</h2></div></header>
+          <div className={styles.donutLayout}><div className={styles.donutChart} style={{ background: donut }}><span><b>{issues.length}</b><small>เรื่อง</small></span></div><div className={styles.donutLegend}><span><i className={styles.legendGreen}/>ปกติ <b>{greenCount}</b></span><span><i className={styles.legendYellow}/>เฝ้าระวัง <b>{yellowCount}</b></span><span><i className={styles.legendRed}/>เร่งด่วน <b>{redCount}</b></span></div></div>
         </article>
       </section>
 

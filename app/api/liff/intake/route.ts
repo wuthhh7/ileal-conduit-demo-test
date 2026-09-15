@@ -2,7 +2,7 @@ import { classify, type Urgency } from '@/lib/triage';
 import { getD1, getRuntimeConfig } from '@/lib/server-db';
 
 type LineProfile = { userId?: string; displayName?: string };
-type IntakeBody = { kind?: 'profile' | 'symptom'; accessToken?: string; data?: Record<string, unknown> };
+type IntakeBody = { kind?: 'profile' | 'report' | 'symptom'; accessToken?: string; data?: Record<string, unknown> };
 
 async function stableId(value: string) {
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
@@ -73,6 +73,25 @@ export async function POST(request: Request) {
     await db.prepare(`insert into messages (patient_id, role, body, reason, created_at) values (?, 'bot', ?, 'บันทึกจาก LIFF', ?)`).bind(patient.id, reply, patient.now).run();
     await pushToChat(lineProfile.userId, `✅ ${reply}`);
     return Response.json({ message: 'ประวัติถูกบันทึกและส่งข้อความยืนยันเข้าแชทแล้ว' });
+  }
+
+  if (body.kind === 'report') {
+    const subject = text(body.data, 'subject');
+    const category = text(body.data, 'category');
+    const detail = text(body.data, 'detail');
+    const onset = text(body.data, 'onset');
+    if (!subject || !category || !detail || !onset) return Response.json({ error: 'ข้อมูลยังไม่ครบ กรุณาตรวจทุกช่อง' }, { status: 400 });
+    const urgency = classify(`${subject} ${category} ${detail}`);
+    const urgencyText = urgency === 'red' ? 'เร่งด่วน' : urgency === 'yellow' ? 'เฝ้าระวัง' : 'ปกติ';
+    const summary = `แจ้งปัญหาผ่านแบบฟอร์ม\nหัวข้อ: ${subject}\nประเภท: ${category}\nเริ่มพบ: ${onset}\nรายละเอียด: ${detail}`;
+    await db.prepare(`insert into issues (patient_id, subject, category, detail, onset, urgency, status, created_at)
+      values (?, ?, ?, ?, ?, ?, 'unanswered', ?)`).bind(patient.id, subject.slice(0, 120), category.slice(0, 80), detail.slice(0, 1500), onset.slice(0, 80), urgency, patient.now).run();
+    await db.prepare(`update patients set urgency = ?, updated_at = ? where id = ?`).bind(urgency, patient.now, patient.id).run();
+    await db.prepare(`insert into messages (patient_id, role, body, reason, created_at) values (?, 'user', ?, 'แจ้งปัญหาจาก LIFF', ?)`).bind(patient.id, summary, patient.now).run();
+    const reply = `รับเรื่อง “${subject}” เรียบร้อยแล้วค่ะ พยาบาลจะตรวจสอบและตอบกลับทางแชท LINE นี้`;
+    await db.prepare(`insert into messages (patient_id, role, body, reason, created_at) values (?, 'bot', ?, 'ยืนยันรับเรื่อง', ?)`).bind(patient.id, reply, patient.now).run();
+    await pushToChat(lineProfile.userId, `📨 ${reply}\nระดับการติดตามเบื้องต้น: ${urgencyText}`);
+    return Response.json({ message: 'ส่งเรื่องให้พยาบาลแล้ว กรุณารอคำตอบในแชท LINE', urgency });
   }
 
   const fields = ['symptom', 'duration', 'severity', 'fever', 'urination', 'bleeding'] as const;

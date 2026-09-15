@@ -81,10 +81,11 @@ export function PatientDetail({ patientId }: { patientId: string }) {
         </header>
         <div className={styles.lineChat}>{data.messages.length ? data.messages.map((message) => {
           const fromPatient = message.role === 'user';
-          return <article key={message.id} className={`${styles.chatMessage} ${fromPatient ? styles.chatFromPatient : styles.chatFromSystem}`}>
+          const fromNurse = message.role === 'nurse';
+          return <article key={message.id} className={`${styles.chatMessage} ${fromPatient ? styles.chatFromPatient : fromNurse ? styles.chatFromNurse : styles.chatFromSystem}`}>
             {!fromPatient && <span className={styles.chatAvatar}><HeartPulse/></span>}
             <div className={styles.chatBubbleGroup}>
-              <b>{fromPatient ? 'ผู้ป่วย' : 'ระบบช่วยคัดกรอง'}</b>
+              <b>{fromPatient ? 'ผู้ป่วย' : fromNurse ? 'พยาบาล' : 'ระบบช่วยคัดกรอง'}</b>
               <div className={styles.chatBubble}><p>{message.body}</p>{message.reason && <small>{message.reason}</small>}</div>
               <time>{thaiDate(message.createdAt)}</time>
             </div>

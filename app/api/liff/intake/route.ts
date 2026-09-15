@@ -56,19 +56,15 @@ export async function POST(request: Request) {
   if (body.kind === 'profile') {
     const name = text(body.data, 'name');
     const age = Number(text(body.data, 'age'));
-    const procedure = text(body.data, 'procedure');
-    const dischargeDate = text(body.data, 'dischargeDate');
-    const dischargeTime = /^\d{4}-\d{2}-\d{2}$/.test(dischargeDate) ? Date.parse(`${dischargeDate}T00:00:00Z`) : Number.NaN;
-    const bangkokNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
-    const todayTime = Date.UTC(bangkokNow.getUTCFullYear(), bangkokNow.getUTCMonth(), bangkokNow.getUTCDate());
-    const dischargeDay = Math.floor((todayTime - dischargeTime) / 86_400_000);
-    if (!name || !procedure || !Number.isInteger(age) || age < 1 || age > 120 || !Number.isFinite(dischargeTime) || dischargeDay < 0 || dischargeDay > 365) {
+    const phone = text(body.data, 'phone');
+    const lineId = text(body.data, 'lineId');
+    const normalizedPhone = phone.replace(/[\s-]/g, '');
+    if (!name || !lineId || !Number.isInteger(age) || age < 1 || age > 120 || !/^\+?\d{9,15}$/.test(normalizedPhone)) {
       return Response.json({ error: 'ข้อมูลประวัติยังไม่ครบหรือไม่ถูกต้อง กรุณาตรวจทุกช่อง' }, { status: 400 });
     }
-    const displayDate = new Intl.DateTimeFormat('th-TH', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(dischargeTime));
-    const summary = `ส่งแบบฟอร์มประวัติ\nชื่อ: ${name}\nอายุ: ${age} ปี\nการรักษา: ${procedure}\nวันที่ออกจากโรงพยาบาล: ${displayDate}\nผ่านมาแล้ว: ${dischargeDay} วัน`;
-    const reply = 'บันทึกประวัติผู้ป่วยเรียบร้อยแล้วค่ะ ข้อมูลจะแสดงใน Dashboard ของเจ้าหน้าที่';
-    await db.prepare(`update patients set display_name = ?, age = ?, procedure = ?, discharge_date = ?, discharge_day = ?, intake_field = null, updated_at = ? where id = ?`).bind(name.slice(0, 120), age, procedure.slice(0, 300), dischargeDate, dischargeDay, patient.now, patient.id).run();
+    const summary = `ส่งแบบฟอร์มประวัติ\nชื่อ–นามสกุล: ${name}\nอายุ: ${age} ปี\nเบอร์โทรศัพท์: ${phone}\nLINE ID: ${lineId}`;
+    const reply = 'บันทึกประวัติผู้ป่วยเข้าสู่ระบบของเจ้าหน้าที่เรียบร้อยแล้วค่ะ';
+    await db.prepare(`update patients set display_name = ?, age = ?, phone = ?, line_id = ?, procedure = null, discharge_date = null, discharge_day = null, intake_field = null, updated_at = ? where id = ?`).bind(name.slice(0, 120), age, phone.slice(0, 20), lineId.slice(0, 80), patient.now, patient.id).run();
     await db.prepare(`insert into messages (patient_id, role, body, created_at) values (?, 'user', ?, ?)`).bind(patient.id, summary, patient.now).run();
     await db.prepare(`insert into messages (patient_id, role, body, reason, created_at) values (?, 'bot', ?, 'บันทึกจาก LIFF', ?)`).bind(patient.id, reply, patient.now).run();
     await pushToChat(lineProfile.userId, `✅ ${reply}`);
@@ -80,7 +76,8 @@ export async function POST(request: Request) {
     const category = text(body.data, 'category');
     const detail = text(body.data, 'detail');
     const onset = text(body.data, 'onset');
-    if (!subject || !category || !detail || !onset) return Response.json({ error: 'ข้อมูลยังไม่ครบ กรุณาตรวจทุกช่อง' }, { status: 400 });
+    const allowedCategories = ['ลำไส้ผิดปกติ', 'ความผิดปกติของปัสสาวะ', 'ไข้สูง'];
+    if (!subject || !allowedCategories.includes(category) || !detail || !onset) return Response.json({ error: 'ข้อมูลยังไม่ครบหรือประเภทปัญหาไม่ถูกต้อง กรุณาตรวจทุกช่อง' }, { status: 400 });
     const urgency = classify(`${subject} ${category} ${detail}`);
     const urgencyText = urgency === 'red' ? 'เร่งด่วน' : urgency === 'yellow' ? 'เฝ้าระวัง' : 'ปกติ';
     const summary = `แจ้งปัญหาผ่านแบบฟอร์ม\nหัวข้อ: ${subject}\nประเภท: ${category}\nเริ่มพบ: ${onset}\nรายละเอียด: ${detail}`;

@@ -1,9 +1,9 @@
 import { createDashboardSession } from '@/lib/dashboard-auth';
 
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => ({})) as { password?: string };
-  const token = await createDashboardSession(String(body.password || ''));
-  if (!token) return Response.json({ error: 'รหัสผ่านไม่ถูกต้อง' }, { status: 401 });
+  const body = await request.json().catch(() => ({})) as { username?: string; password?: string };
+  const token = await createDashboardSession(String(body.username || '').trim(), String(body.password || ''));
+  if (!token) return Response.json({ error: 'Username หรือ Password ไม่ถูกต้อง' }, { status: 401 });
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
   return new Response(JSON.stringify({ ok: true }), {
     headers: {

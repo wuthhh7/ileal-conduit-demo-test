@@ -10,6 +10,7 @@ export type Patient = {
   procedure: string | null;
   dischargeDate: string | null;
   dischargeDay: number | null;
+  createdAt: string;
   updatedAt: string;
   messageCount: number;
   symptomSummary: string | null;

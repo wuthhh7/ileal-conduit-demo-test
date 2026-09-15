@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Siriraj Urology Care',
+  title: 'Ilieal Conduit Care',
   description: 'ระบบติดตามผู้ป่วยผ่าน LINE และ Dashboard สำหรับเจ้าหน้าที่',
 };
 

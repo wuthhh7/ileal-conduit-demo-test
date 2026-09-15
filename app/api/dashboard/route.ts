@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const db = getD1();
   const [patients, assessmentRows, distribution, recentAssessments] = await Promise.all([
     db.prepare(`select id, line_user_id as "lineUserId", display_name as "displayName", urgency, status, age, procedure,
-      discharge_date as "dischargeDate", discharge_day as "dischargeDay", updated_at as "updatedAt",
+      discharge_date as "dischargeDate", discharge_day as "dischargeDay", created_at as "createdAt", updated_at as "updatedAt",
       (select count(*) from messages where patient_id = patients.id) as "messageCount",
       (select body from messages where patient_id = patients.id and role = 'user' and (body like 'แจ้งอาการผ่านแบบฟอร์ม%' or body like 'ส่งแบบฟอร์มแจ้งอาการ%') order by id desc limit 1) as "symptomSummary",
       (select created_at from messages where patient_id = patients.id and role = 'user' and (body like 'แจ้งอาการผ่านแบบฟอร์ม%' or body like 'ส่งแบบฟอร์มแจ้งอาการ%') order by id desc limit 1) as "symptomUpdatedAt"

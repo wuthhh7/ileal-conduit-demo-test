@@ -1,5 +1,5 @@
-import { DashboardOverview } from '@/components/dashboard/dashboard-overview';
+import { redirect } from 'next/navigation';
 
 export default function DashboardPage() {
-  return <DashboardOverview/>;
+  redirect('/dashboard/patients');
 }

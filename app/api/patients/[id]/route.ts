@@ -12,7 +12,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       (select body from messages where patient_id = patients.id and role = 'user' and (body like 'แจ้งอาการผ่านแบบฟอร์ม%' or body like 'ส่งแบบฟอร์มแจ้งอาการ%') order by id desc limit 1) as "symptomSummary",
       (select created_at from messages where patient_id = patients.id and role = 'user' and (body like 'แจ้งอาการผ่านแบบฟอร์ม%' or body like 'ส่งแบบฟอร์มแจ้งอาการ%') order by id desc limit 1) as "symptomUpdatedAt"
       from patients where id = ?`).bind(id).first(),
-    db.prepare(`select id, role, body, reason, created_at as "createdAt" from messages where patient_id = ? order by id desc`).bind(id).all(),
+    db.prepare(`select id, role, body, reason, created_at as "createdAt" from messages where patient_id = ? order by id asc`).bind(id).all(),
   ]);
   if (!patient) return Response.json({ error: 'ไม่พบผู้ใช้' }, { status: 404 });
   return Response.json({ patient, messages: messages.results });

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, ClipboardPlus, Clock3, FileText, HeartPulse, UserRound } from 'lucide-react';
+import { ArrowLeft, ClipboardPlus, Clock3, HeartPulse, MessageCircle, UserRound } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DashboardLogin } from './dashboard-login';
 import { DashboardShell } from './dashboard-shell';
@@ -73,9 +73,24 @@ export function PatientDetail({ patientId }: { patientId: string }) {
         <div>{Object.entries(statusLabel).map(([key, label]) => <button key={key} disabled={saving} className={data.patient.status === key ? styles.statusActive : ''} onClick={() => updateStatus(key)}>{label}</button>)}</div>
       </section>
 
-      <section className={styles.whitePanel}>
-        <header className={styles.panelTitle}><span><FileText/></span><div><small>เรียงจากล่าสุด</small><h2>ลำดับการติดต่อ</h2></div></header>
-        <div className={styles.timeline}>{data.messages.length ? data.messages.map((message) => <article key={message.id} className={message.role === 'user' ? styles.fromPatient : styles.fromSystem}><span>{message.role === 'user' ? <UserRound/> : <HeartPulse/>}</span><div><header><b>{message.role === 'user' ? 'ผู้ป่วย' : 'ระบบช่วยคัดกรอง'}</b><time>{thaiDate(message.createdAt)}</time></header><p>{message.body}</p>{message.reason && <small>{message.reason}</small>}</div></article>) : <div className={styles.emptySmall}>ยังไม่มีประวัติการติดต่อ</div>}</div>
+      <section className={styles.chatPanel}>
+        <header className={styles.chatTopbar}>
+          <span className={styles.chatProfile}><MessageCircle/></span>
+          <div><small>การสนทนาผ่าน LINE OA</small><h2>{data.patient.displayName}</h2></div>
+          <span className={styles.chatOnline}>บันทึกข้อความอัตโนมัติ</span>
+        </header>
+        <div className={styles.lineChat}>{data.messages.length ? data.messages.map((message) => {
+          const fromPatient = message.role === 'user';
+          return <article key={message.id} className={`${styles.chatMessage} ${fromPatient ? styles.chatFromPatient : styles.chatFromSystem}`}>
+            {!fromPatient && <span className={styles.chatAvatar}><HeartPulse/></span>}
+            <div className={styles.chatBubbleGroup}>
+              <b>{fromPatient ? 'ผู้ป่วย' : 'ระบบช่วยคัดกรอง'}</b>
+              <div className={styles.chatBubble}><p>{message.body}</p>{message.reason && <small>{message.reason}</small>}</div>
+              <time>{thaiDate(message.createdAt)}</time>
+            </div>
+            {fromPatient && <span className={styles.chatAvatar}><UserRound/></span>}
+          </article>;
+        }) : <div className={styles.chatEmpty}><MessageCircle/><b>ยังไม่มีข้อความ</b><span>ข้อความจาก LINE OA จะแสดงในบริเวณนี้</span></div>}</div>
       </section>
     </>}
   </DashboardShell>;

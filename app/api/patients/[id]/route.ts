@@ -5,7 +5,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   if (!(await isDashboardAuthorized(request))) return Response.json({ error: 'unauthorized' }, { status: 401 });
   const { id } = await context.params;
   const db = getD1();
-  const [patient, messages] = await Promise.all([
+  const [patient, messages, issues] = await Promise.all([
     db.prepare(`select id, line_user_id as "lineUserId", display_name as "displayName", urgency, status, age, procedure,
       discharge_date as "dischargeDate", discharge_day as "dischargeDay", created_at as "createdAt", updated_at as "updatedAt",
       (select count(*) from messages where patient_id = patients.id) as "messageCount",
@@ -13,9 +13,13 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       (select created_at from messages where patient_id = patients.id and role = 'user' and (body like 'แจ้งอาการผ่านแบบฟอร์ม%' or body like 'ส่งแบบฟอร์มแจ้งอาการ%') order by id desc limit 1) as "symptomUpdatedAt"
       from patients where id = ?`).bind(id).first(),
     db.prepare(`select id, role, body, reason, created_at as "createdAt" from messages where patient_id = ? order by id asc`).bind(id).all(),
+    db.prepare(`select i.id, i.patient_id as "patientId", p.line_user_id as "lineUserId", p.display_name as "displayName",
+      i.subject, i.category, i.detail, i.onset, i.urgency, i.status, i.reply_text as "replyText",
+      i.created_at as "createdAt", i.replied_at as "repliedAt"
+      from issues i join patients p on p.id = i.patient_id where i.patient_id = ? order by i.created_at desc`).bind(id).all(),
   ]);
   if (!patient) return Response.json({ error: 'ไม่พบผู้ใช้' }, { status: 404 });
-  return Response.json({ patient, messages: messages.results });
+  return Response.json({ patient, issues: issues.results, messages: messages.results });
 }
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {

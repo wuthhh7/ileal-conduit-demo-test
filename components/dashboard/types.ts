@@ -44,7 +44,7 @@ export type Issue = {
 };
 
 export type DashboardSummary = { patients: Patient[]; assessments: Assessment; issues: Issue[] };
-export type PatientDetailData = { patient: Patient; messages: { id: number; role: string; body: string; reason: string | null; createdAt: string }[] };
+export type PatientDetailData = { patient: Patient; issues: Issue[]; messages: { id: number; role: string; body: string; reason: string | null; createdAt: string }[] };
 
 export const urgencyLabel: Record<Urgency, string> = { red: 'เร่งด่วน', yellow: 'เฝ้าระวัง', green: 'ปกติ' };
 export const statusLabel: Record<string, string> = { awaiting_staff: 'รอเจ้าหน้าที่', in_progress: 'กำลังติดตาม', resolved: 'เรียบร้อย' };

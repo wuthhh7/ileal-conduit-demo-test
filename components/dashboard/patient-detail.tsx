@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, ClipboardPlus, Clock3, HeartPulse, MessageCircle, UserRound } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ClipboardPlus, Clock3, HeartPulse, MessageCircle, MessageSquareWarning, UserRound } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DashboardLogin } from './dashboard-login';
 import { DashboardShell } from './dashboard-shell';
@@ -71,6 +71,16 @@ export function PatientDetail({ patientId }: { patientId: string }) {
       <section className={styles.careStatus}>
         <div><small>สถานะการดูแล</small><h2>อัปเดตการติดตามเคส</h2></div>
         <div>{Object.entries(statusLabel).map(([key, label]) => <button key={key} disabled={saving} className={data.patient.status === key ? styles.statusActive : ''} onClick={() => updateStatus(key)}>{label}</button>)}</div>
+      </section>
+
+      <section className={styles.issueHistoryPanel}>
+        <header className={styles.panelTitle}><span><MessageSquareWarning/></span><div><small>เรียงจากล่าสุด</small><h2>ประวัติการแจ้งปัญหา ({data.issues.length} ครั้ง)</h2></div></header>
+        {data.issues.length ? <div className={styles.issueHistoryList}>{data.issues.map((issue) => <article key={issue.id} className={styles.issueHistoryItem}>
+          <div className={styles.issueHistoryHeader}><div><span className={`${styles.tableBadge} ${styles[issue.urgency]}`}>{urgencyLabel[issue.urgency]}</span><small>{issue.category}</small></div><time>{thaiDate(issue.createdAt)}</time></div>
+          <h3>{issue.subject}</h3><p>{issue.detail}</p>
+          {issue.onset && <small className={styles.issueHistoryOnset}><Clock3/>เริ่มพบ: {issue.onset}</small>}
+          {issue.status === 'answered' ? <div className={styles.issueHistoryReply}><b><CheckCircle2/>พยาบาลตอบกลับแล้ว</b><p>{issue.replyText}</p><time>{thaiDate(issue.repliedAt)}</time></div> : <Link href={`/dashboard/issues/unanswered#issue-${issue.id}`} className={styles.issueHistoryPending}>ยังไม่ตอบกลับ — ไปที่หน้าตอบกลับ</Link>}
+        </article>)}</div> : <div className={styles.emptySmall}>ผู้ป่วยรายนี้ยังไม่เคยแจ้งปัญหา</div>}
       </section>
 
       <section className={styles.chatPanel}>

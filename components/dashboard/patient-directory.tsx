@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Download, MoreHorizontal, Search, SlidersHorizontal, UsersRound } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, History, Search, UsersRound } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { DashboardLogin } from './dashboard-login';
 import { DashboardShell } from './dashboard-shell';
-import type { Patient, Urgency } from './types';
-import { shortSymptom, statusLabel, thaiDate, urgencyLabel } from './types';
+import type { Issue, Patient } from './types';
+import { thaiDate } from './types';
 import { useDashboardData } from './use-dashboard-data';
 import styles from './dashboard.module.css';
 
@@ -19,25 +19,26 @@ function csvCell(value: string | number | null) {
 export function PatientDirectory() {
   const { data, needsLogin, error, loading, load } = useDashboardData();
   const [query, setQuery] = useState('');
-  const [urgency, setUrgency] = useState<'all' | Urgency>('all');
   const [page, setPage] = useState(1);
 
   const patients = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('th');
-    return (data?.patients || []).filter((patient) => {
-      const matchesUrgency = urgency === 'all' || patient.urgency === urgency;
-      const haystack = [patient.displayName, patient.procedure, shortSymptom(patient.symptomSummary)].join(' ').toLocaleLowerCase('th');
-      return matchesUrgency && (!normalized || haystack.includes(normalized));
-    });
-  }, [data, query, urgency]);
+    const issues = data?.issues || [];
+    return (data?.patients || []).map((patient) => {
+      const patientIssues = issues.filter((issue) => issue.patientId === patient.id);
+      const latestIssue = patientIssues.reduce<Issue | null>((latest, issue) => !latest || new Date(issue.createdAt) > new Date(latest.createdAt) ? issue : latest, null);
+      return { ...patient, issueCount: patientIssues.length, latestIssueAt: latestIssue?.createdAt || null, issueSearch: patientIssues.map((issue) => `${issue.subject} ${issue.detail}`).join(' ') };
+    }).filter((patient) => !normalized || `${patient.displayName} ${patient.issueSearch}`.toLocaleLowerCase('th').includes(normalized))
+      .sort((a, b) => (b.latestIssueAt ? new Date(b.latestIssueAt).getTime() : 0) - (a.latestIssueAt ? new Date(a.latestIssueAt).getTime() : 0));
+  }, [data, query]);
 
   const totalPages = Math.max(1, Math.ceil(patients.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const visiblePatients = patients.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   function exportPatients() {
-    const header = ['ชื่อผู้ป่วย', 'อายุ', 'การรักษาหรือหัตถการ', 'วันที่ออกจากโรงพยาบาล', 'อาการล่าสุด', 'ความเร่งด่วน', 'สถานะ'];
-    const rows = patients.map((patient) => [patient.displayName, patient.age ? `${patient.age} ปี` : '', patient.procedure || '', thaiDate(patient.dischargeDate), shortSymptom(patient.symptomSummary), urgencyLabel[patient.urgency], statusLabel[patient.status] || patient.status]);
+    const header = ['ชื่อผู้ป่วย', 'อายุ', 'วันที่แจ้งปัญหาล่าสุด', 'จำนวนครั้งการแจ้งปัญหา'];
+    const rows = patients.map((patient) => [patient.displayName, patient.age ? `${patient.age} ปี` : '', patient.latestIssueAt ? thaiDate(patient.latestIssueAt) : '', patient.issueCount]);
     const csv = `\uFEFF${[header, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n')}`;
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const anchor = document.createElement('a');
@@ -48,38 +49,34 @@ export function PatientDirectory() {
   }
 
   if (needsLogin) return <DashboardLogin onSuccess={load}/>;
-  return <DashboardShell title="ผู้ป่วย" description="ข้อมูลผู้ป่วยทั้งหมดและสถานะการติดตามล่าสุด" onRefresh={load}>
+  return <DashboardShell title="ผู้ป่วย" description="รายชื่อผู้ป่วยและประวัติการแจ้งปัญหาแต่ละราย" onRefresh={load}>
     {error && <div className={styles.error}>{error}</div>}
     <section className={styles.tablePanel}>
       <div className={styles.tableToolbar}>
-        <label className={styles.tableSearch}><Search/><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="ค้นหาชื่อ หัตถการ หรืออาการ..."/></label>
-        <label className={styles.selectFilter}><SlidersHorizontal/><span>ความเร่งด่วน</span><select value={urgency} onChange={(event) => { setUrgency(event.target.value as 'all' | Urgency); setPage(1); }}><option value="all">ทั้งหมด</option><option value="red">เร่งด่วน</option><option value="yellow">เฝ้าระวัง</option><option value="green">ปกติ</option></select></label>
+        <label className={styles.tableSearch}><Search/><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="ค้นหาชื่อหรือปัญหาที่เคยแจ้ง..."/></label>
         <button type="button" className={styles.exportButton} onClick={exportPatients} disabled={!patients.length}><Download/>ส่งออก CSV</button>
       </div>
 
       {loading && !data ? <div className={styles.loadingRows}><i/><i/><i/></div> : visiblePatients.length ? <>
         <div className={styles.patientTableWrap}>
           <table className={styles.patientTable}>
-            <caption className={styles.srOnly}>รายชื่อและข้อมูลติดตามผู้ป่วย</caption>
-            <thead><tr><th scope="col">ผู้ป่วย</th><th scope="col">อายุ</th><th scope="col">การรักษา / หัตถการ</th><th scope="col">วันที่ออก รพ.</th><th scope="col">อาการล่าสุด</th><th scope="col">ความเร่งด่วน</th><th scope="col">สถานะ</th><th scope="col">รายละเอียด</th></tr></thead>
+            <caption className={styles.srOnly}>รายชื่อและประวัติการแจ้งปัญหาของผู้ป่วย</caption>
+            <thead><tr><th scope="col">ชื่อ</th><th scope="col">อายุ</th><th scope="col">วันที่แจ้งปัญหาล่าสุด</th><th scope="col">จำนวนครั้งการแจ้งปัญหา</th><th scope="col">ประวัติการแจ้งปัญหา</th></tr></thead>
             <tbody>{visiblePatients.map((patient) => <PatientRow key={patient.id} patient={patient}/>)}</tbody>
           </table>
         </div>
         <footer className={styles.pagination}><span>แสดง {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, patients.length)} จาก {patients.length} ราย</span><div><button disabled={currentPage === 1} onClick={() => setPage((current) => current - 1)} aria-label="หน้าก่อนหน้า"><ChevronLeft/></button><b>{currentPage}</b><span>/ {totalPages}</span><button disabled={currentPage === totalPages} onClick={() => setPage((current) => current + 1)} aria-label="หน้าถัดไป"><ChevronRight/></button></div></footer>
-      </> : <div className={styles.empty}><UsersRound/><h2>ไม่พบข้อมูลผู้ป่วย</h2><p>{query || urgency !== 'all' ? 'ลองเปลี่ยนคำค้นหาหรือตัวกรอง' : 'ยังไม่มีผู้ป่วยในหมวดนี้'}</p></div>}
+      </> : <div className={styles.empty}><UsersRound/><h2>ไม่พบข้อมูลผู้ป่วย</h2><p>{query ? 'ลองเปลี่ยนคำค้นหา' : 'ยังไม่มีข้อมูลผู้ป่วย'}</p></div>}
     </section>
   </DashboardShell>;
 }
 
-function PatientRow({ patient }: { patient: Patient }) {
+function PatientRow({ patient }: { patient: Patient & { latestIssueAt: string | null; issueCount: number } }) {
   return <tr>
     <th scope="row" aria-label={`ผู้ป่วย ${patient.displayName}`}><div className={styles.tablePatient}><span className={styles.tableAvatar}>{patient.displayName.charAt(0) || '?'}</span><div><b>{patient.displayName}</b><small>อัปเดต {thaiDate(patient.updatedAt)}</small></div></div></th>
     <td>{patient.age ? `${patient.age} ปี` : <span className={styles.tableMuted}>ไม่ระบุ</span>}</td>
-    <td className={styles.procedureCell}>{patient.procedure || <span className={styles.tableMuted}>ยังไม่ระบุ</span>}</td>
-    <td>{thaiDate(patient.dischargeDate)}</td>
-    <td className={styles.symptomCell}>{shortSymptom(patient.symptomSummary)}</td>
-    <td><span className={`${styles.tableBadge} ${styles[patient.urgency]}`}>{urgencyLabel[patient.urgency]}</span></td>
-    <td><span className={`${styles.statusDot} ${styles[patient.status]}`}>{statusLabel[patient.status] || patient.status}</span></td>
-    <td><Link href={`/dashboard/patients/${patient.id}`} className={styles.rowAction} aria-label={`ดูรายละเอียด ${patient.displayName}`}><MoreHorizontal/></Link></td>
+    <td>{patient.latestIssueAt ? thaiDate(patient.latestIssueAt) : <span className={styles.tableMuted}>ยังไม่เคยแจ้งปัญหา</span>}</td>
+    <td><span className={styles.issueCount}>{patient.issueCount} ครั้ง</span></td>
+    <td><Link href={`/dashboard/patients/${patient.id}`} className={styles.historyAction} aria-label={`ดูประวัติการแจ้งปัญหาของ ${patient.displayName}`}><History/>ดูประวัติ</Link></td>
   </tr>;
 }

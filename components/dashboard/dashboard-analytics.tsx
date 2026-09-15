@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowRight, CheckCircle2, CircleAlert, Clock3, History, ShieldCheck, Tickets } from 'lucide-react';
 import { DashboardLogin } from './dashboard-login';
 import { DashboardShell } from './dashboard-shell';
+import { PatientAvatar } from './patient-avatar';
 import { thaiDate, urgencyLabel } from './types';
 import { useDashboardData } from './use-dashboard-data';
 import styles from './dashboard.module.css';
@@ -48,11 +49,6 @@ export function DashboardAnalytics() {
     };
   });
   const chartMax = Math.max(...days.flatMap((day) => [day.total, day.urgent]), 1);
-  const points = (field: 'total' | 'urgent') => days.map((day, index) => {
-    const x = 30 + index * (640 / 6);
-    const y = 180 - (day[field] / chartMax) * 130;
-    return `${x},${y}`;
-  }).join(' ');
   const greenCount = issues.filter((issue) => issue.urgency === 'green').length;
   const yellowCount = issues.filter((issue) => issue.urgency === 'yellow').length;
   const redCount = issues.filter((issue) => issue.urgency === 'red').length;
@@ -73,20 +69,18 @@ export function DashboardAnalytics() {
       <section className={styles.dashboardMainGrid}>
         <article className={`${styles.dashboardCard} ${styles.trendCard}`}>
           <header><div><small>7 วันล่าสุด</small><h2>แนวโน้มปัญหาที่แจ้งเข้ามา</h2></div><div className={styles.chartLegend}><span><i/>เรื่องใหม่</span><span><i/>เรื่องเร่งด่วน</span></div></header>
-          <div className={styles.lineChart}>
-            <svg viewBox="0 0 700 220"><title>กราฟเรื่องที่ผู้ป่วยแจ้งและเรื่องเร่งด่วนในช่วง 7 วันล่าสุด</title>
-              {[50, 115, 180].map((y) => <line key={y} x1="30" x2="670" y1={y} y2={y} className={styles.chartGridLine}/>) }
-              <polyline points={`30,180 ${points('total')} 670,180`} className={styles.chartArea}/>
-              <polyline points={points('total')} className={styles.chartLinePrimary}/>
-              <polyline points={points('urgent')} className={styles.chartLineDanger}/>
-              {days.map((day, index) => <g key={day.label}><circle cx={30 + index * (640 / 6)} cy={180 - (day.total / chartMax) * 130} r="4" className={styles.chartDotPrimary}/><circle cx={30 + index * (640 / 6)} cy={180 - (day.urgent / chartMax) * 130} r="3" className={styles.chartDotDanger}/><text x={30 + index * (640 / 6)} y="207" textAnchor="middle">{day.label}</text></g>)}
-            </svg>
-          </div>
+          <figure className={styles.barChart} aria-label="กราฟแท่งจำนวนเรื่องใหม่และเรื่องเร่งด่วนในช่วง 7 วันล่าสุด">
+            <div className={styles.barChartPlot}>{days.map((day) => <div className={styles.barDay} key={day.label}>
+              <div className={styles.barValues}><b>{day.total}</b>{day.urgent > 0 && <span>{day.urgent} เร่งด่วน</span>}</div>
+              <div className={styles.barTrack}><i className={styles.barTotal} style={{ height: `${Math.max((day.total / chartMax) * 100, 3)}%` }}/><i className={styles.barUrgent} style={{ height: `${(day.urgent / chartMax) * 100}%` }}/></div>
+              <small>{day.label}</small>
+            </div>)}</div>
+          </figure>
         </article>
 
         <article className={`${styles.dashboardCard} ${styles.attentionCard}`}>
           <header><div><small>เรียงตามความสำคัญ</small><h2>เรื่องที่รอคำตอบ</h2></div><Link href="/dashboard/issues/unanswered">ดูทั้งหมด<ArrowRight/></Link></header>
-          <div className={styles.attentionList}>{attention.length ? attention.map((issue) => <Link href={`/dashboard/issues/unanswered#issue-${issue.id}`} key={issue.id}><span className={styles.miniAvatar}>{issue.displayName.charAt(0) || '?'}</span><div><b>{issue.subject}</b><small>{issue.displayName}</small></div><span className={`${styles.tableBadge} ${styles[issue.urgency]}`}>{urgencyLabel[issue.urgency]}</span></Link>) : <div className={styles.compactEmpty}><ShieldCheck/>ไม่มีเรื่องที่รอคำตอบ</div>}</div>
+          <div className={styles.attentionList}>{attention.length ? attention.map((issue) => <Link href={`/dashboard/issues/unanswered#issue-${issue.id}`} key={issue.id}><PatientAvatar name={issue.displayName} avatarUrl={issue.avatarUrl} className={styles.miniAvatar}/><div><b>{issue.subject}</b><small>{issue.displayName}</small></div><span className={`${styles.tableBadge} ${styles[issue.urgency]}`}>{urgencyLabel[issue.urgency]}</span></Link>) : <div className={styles.compactEmpty}><ShieldCheck/>ไม่มีเรื่องที่รอคำตอบ</div>}</div>
         </article>
 
         <article className={`${styles.dashboardCard} ${styles.statusCard}`}>
@@ -97,7 +91,7 @@ export function DashboardAnalytics() {
 
       <section className={`${styles.dashboardCard} ${styles.overviewTableCard}`}>
         <header><div><small>10 คนล่าสุดที่แจ้งปัญหา</small><h2>ภาพรวมผู้ป่วย</h2></div><Link href="/dashboard/patients">ดูผู้ป่วยทั้งหมด<ArrowRight/></Link></header>
-        {latestPatients.length ? <div className={styles.dashboardTableWrap}><table className={styles.dashboardTable}><caption className={styles.srOnly}>ผู้ป่วย 10 คนล่าสุดที่แจ้งปัญหา</caption><thead><tr><th scope="col">ชื่อ</th><th scope="col">อายุ</th><th scope="col">วันที่แจ้งปัญหาล่าสุด</th><th scope="col">จำนวนครั้งการแจ้งปัญหา</th><th scope="col">ประวัติการแจ้งปัญหา</th></tr></thead><tbody>{latestPatients.map((patient) => <tr key={patient.id}><th scope="row" aria-label={`ผู้ป่วย ${patient.displayName}`}><div className={styles.tablePatient}><span className={styles.tableAvatar}>{patient.displayName.charAt(0) || '?'}</span><div><b>{patient.displayName}</b></div></div></th><td>{patient.age ? `${patient.age} ปี` : 'ไม่ระบุ'}</td><td>{thaiDate(patient.latestIssueAt)}</td><td><span className={styles.issueCount}>{patient.issueCount} ครั้ง</span></td><td><Link href={`/dashboard/patients/${patient.id}`} className={styles.historyAction} aria-label={`ดูประวัติการแจ้งปัญหาของ ${patient.displayName}`}><History/>ดูประวัติ</Link></td></tr>)}</tbody></table></div> : <div className={styles.compactEmpty}>ยังไม่มีผู้ป่วยแจ้งปัญหา</div>}
+        {latestPatients.length ? <div className={styles.dashboardTableWrap}><table className={styles.dashboardTable}><caption className={styles.srOnly}>ผู้ป่วย 10 คนล่าสุดที่แจ้งปัญหา</caption><thead><tr><th scope="col">ชื่อ</th><th scope="col">อายุ</th><th scope="col">วันที่แจ้งปัญหาล่าสุด</th><th scope="col">จำนวนครั้งการแจ้งปัญหา</th><th scope="col">ประวัติการแจ้งปัญหา</th></tr></thead><tbody>{latestPatients.map((patient) => <tr key={patient.id}><th scope="row" aria-label={`ผู้ป่วย ${patient.displayName}`}><div className={styles.tablePatient}><PatientAvatar name={patient.displayName} avatarUrl={patient.avatarUrl} className={styles.tableAvatar}/><div><b>{patient.displayName}</b></div></div></th><td>{patient.age ? `${patient.age} ปี` : 'ไม่ระบุ'}</td><td>{thaiDate(patient.latestIssueAt)}</td><td><span className={styles.issueCount}>{patient.issueCount} ครั้ง</span></td><td><Link href={`/dashboard/patients/${patient.id}`} className={styles.historyAction} aria-label={`ดูประวัติการแจ้งปัญหาของ ${patient.displayName}`}><History/>ดูประวัติ</Link></td></tr>)}</tbody></table></div> : <div className={styles.compactEmpty}>ยังไม่มีผู้ป่วยแจ้งปัญหา</div>}
       </section>
     </>}
   </DashboardShell>;

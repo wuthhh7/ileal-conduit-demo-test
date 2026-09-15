@@ -5,6 +5,7 @@ import { CheckCircle2, Clock3, MessageCircleReply, Search, Send } from 'lucide-r
 import { type SyntheticEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { DashboardLogin } from './dashboard-login';
 import { DashboardShell } from './dashboard-shell';
+import { PatientAvatar } from './patient-avatar';
 import type { Issue } from './types';
 import { thaiDate, urgencyLabel } from './types';
 import styles from './dashboard.module.css';
@@ -67,7 +68,7 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
     {loading ? <div className={styles.loadingRows}><i/><i/><i/></div> : visibleIssues.length ? <section className={styles.issueGrid}>{visibleIssues.map((issue) => <article id={`issue-${issue.id}`} key={issue.id} className={`${styles.issueCard} ${styles[`issue_${issue.urgency}`]}`}>
       <header><div><span className={`${styles.tableBadge} ${styles[issue.urgency]}`}>{urgencyLabel[issue.urgency]}</span><small>เรื่อง #{issue.id}</small></div><time>{thaiDate(issue.createdAt)}</time></header>
       <div className={styles.issueBody}><p>{issue.category}</p><h2>{issue.subject}</h2><div className={styles.issueDetail}>{issue.detail}</div>{issue.onset && <span className={styles.issueOnset}><Clock3/>เริ่มพบ: {issue.onset}</span>}</div>
-      <footer><Link href={`/dashboard/patients/${issue.patientId}`}><span className={styles.miniAvatar}>{issue.displayName.charAt(0) || '?'}</span><div><small>ผู้ป่วย</small><b>{issue.displayName}</b></div></Link>{unanswered && <button onClick={() => setActiveReply((current) => current === issue.id ? null : issue.id)}><MessageCircleReply/>{activeReply === issue.id ? 'ยกเลิก' : 'ตอบกลับ'}</button>}</footer>
+      <footer><Link href={`/dashboard/patients/${issue.patientId}`}><PatientAvatar name={issue.displayName} avatarUrl={issue.avatarUrl} className={styles.miniAvatar}/><div><small>ผู้ป่วย</small><b>{issue.displayName}</b></div></Link>{unanswered && <button onClick={() => setActiveReply((current) => current === issue.id ? null : issue.id)}><MessageCircleReply/>{activeReply === issue.id ? 'ยกเลิก' : 'ตอบกลับ'}</button>}</footer>
       {unanswered && activeReply === issue.id && <form className={styles.issueReplyForm} onSubmit={(event) => reply(event, issue)}><label htmlFor={`reply-${issue.id}`}>คำตอบจากพยาบาล</label><textarea id={`reply-${issue.id}`} name="reply" required maxLength={2000} placeholder="พิมพ์คำแนะนำหรือคำตอบที่จะส่งเข้า LINE ของผู้ป่วย..."/><button type="submit" disabled={sendingId === issue.id}><Send/>{sendingId === issue.id ? 'กำลังส่ง…' : 'ส่งคำตอบเข้า LINE'}</button><small>เมื่อส่งสำเร็จ เรื่องจะย้ายไปหน้า “ตอบกลับแล้ว” อัตโนมัติ</small></form>}
       {!unanswered && <div className={styles.issueAnswered}><div><CheckCircle2/><b>คำตอบจากพยาบาล</b><time>{thaiDate(issue.repliedAt)}</time></div><p>{issue.replyText}</p></div>}
     </article>)}</section> : <div className={styles.empty}>{unanswered ? <MessageCircleReply/> : <CheckCircle2/>}<h2>{unanswered ? 'ไม่มีเรื่องที่รอตอบกลับ' : 'ยังไม่มีเรื่องที่ตอบกลับแล้ว'}</h2><p>{query ? 'ลองเปลี่ยนคำค้นหา' : unanswered ? 'เรื่องใหม่จาก LINE จะแสดงที่หน้านี้' : 'เรื่องจะย้ายมาหน้านี้หลังส่งคำตอบสำเร็จ'}</p></div>}

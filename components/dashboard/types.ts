@@ -4,6 +4,7 @@ export type Patient = {
   id: string;
   lineUserId: string;
   displayName: string;
+  avatarUrl: string | null;
   urgency: Urgency;
   status: string;
   age: number | null;
@@ -32,6 +33,7 @@ export type Issue = {
   patientId: string;
   lineUserId: string;
   displayName: string;
+  avatarUrl: string | null;
   subject: string;
   category: string;
   detail: string;

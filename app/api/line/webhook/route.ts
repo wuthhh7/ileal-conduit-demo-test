@@ -65,14 +65,26 @@ function welcomeFlex(profileUrl: string, reportUrl: string) {
   };
 }
 
+async function getLineProfile(lineUserId: string) {
+  const token = getRuntimeConfig().lineToken;
+  if (!token) return null;
+  const response = await fetch(`https://api.line.me/v2/bot/profile/${encodeURIComponent(lineUserId)}`, { headers: { authorization: `Bearer ${token}` }, cache: 'no-store' });
+  if (!response.ok) return null;
+  return response.json() as Promise<{ displayName?: string; pictureUrl?: string }>;
+}
+
 async function ensurePatient(lineUserId: string) {
   const db = getD1();
   const id = await stableId(lineUserId);
   const now = new Date().toISOString();
-  await db.prepare(`insert into patients (id, line_user_id, display_name, urgency, status, intake_json, created_at, updated_at)
-    values (?, ?, ?, 'green', 'awaiting_staff', '{}', ?, ?)
-    on conflict(line_user_id) do update set updated_at = excluded.updated_at`)
-    .bind(id, lineUserId, 'ผู้ใช้ LINE (ยังไม่กรอกประวัติ)', now, now).run();
+  const profile = await getLineProfile(lineUserId);
+  const displayName = profile?.displayName || 'ผู้ใช้ LINE (ยังไม่กรอกประวัติ)';
+  await db.prepare(`insert into patients (id, line_user_id, display_name, avatar_url, urgency, status, intake_json, created_at, updated_at)
+    values (?, ?, ?, ?, 'green', 'awaiting_staff', '{}', ?, ?)
+    on conflict(line_user_id) do update set avatar_url = coalesce(excluded.avatar_url, patients.avatar_url),
+      display_name = case when patients.display_name = 'ผู้ใช้ LINE (ยังไม่กรอกประวัติ)' then excluded.display_name else patients.display_name end,
+      updated_at = excluded.updated_at`)
+    .bind(id, lineUserId, displayName, profile?.pictureUrl || null, now, now).run();
   return db.prepare(`select * from patients where line_user_id = ?`).bind(lineUserId).first<Record<string, unknown>>();
 }
 

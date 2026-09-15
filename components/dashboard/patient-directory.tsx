@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Download, History, Search, UsersRound } from
 import { useMemo, useState } from 'react';
 import { DashboardLogin } from './dashboard-login';
 import { DashboardShell } from './dashboard-shell';
+import { PatientAvatar } from './patient-avatar';
 import type { Issue, Patient } from './types';
 import { thaiDate } from './types';
 import { useDashboardData } from './use-dashboard-data';
@@ -73,7 +74,7 @@ export function PatientDirectory() {
 
 function PatientRow({ patient }: { patient: Patient & { latestIssueAt: string | null; issueCount: number } }) {
   return <tr>
-    <th scope="row" aria-label={`ผู้ป่วย ${patient.displayName}`}><div className={styles.tablePatient}><span className={styles.tableAvatar}>{patient.displayName.charAt(0) || '?'}</span><div><b>{patient.displayName}</b><small>อัปเดต {thaiDate(patient.updatedAt)}</small></div></div></th>
+    <th scope="row" aria-label={`ผู้ป่วย ${patient.displayName}`}><div className={styles.tablePatient}><PatientAvatar name={patient.displayName} avatarUrl={patient.avatarUrl} className={styles.tableAvatar}/><div><b>{patient.displayName}</b><small>อัปเดต {thaiDate(patient.updatedAt)}</small></div></div></th>
     <td>{patient.age ? `${patient.age} ปี` : <span className={styles.tableMuted}>ไม่ระบุ</span>}</td>
     <td>{patient.latestIssueAt ? thaiDate(patient.latestIssueAt) : <span className={styles.tableMuted}>ยังไม่เคยแจ้งปัญหา</span>}</td>
     <td><span className={styles.issueCount}>{patient.issueCount} ครั้ง</span></td>

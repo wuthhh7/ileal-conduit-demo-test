@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS patients (
   id text PRIMARY KEY,
   line_user_id text NOT NULL UNIQUE,
   display_name text NOT NULL,
+  avatar_url text,
   urgency text NOT NULL DEFAULT 'green',
   status text NOT NULL DEFAULT 'awaiting_staff',
   age integer,
@@ -51,3 +52,4 @@ CREATE INDEX IF NOT EXISTS patients_updated_at_idx ON patients(updated_at DESC);
 CREATE INDEX IF NOT EXISTS issues_status_created_at_idx ON issues(status, created_at DESC);
 
 ALTER TABLE patients ADD COLUMN IF NOT EXISTS discharge_date text;
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS avatar_url text;

@@ -1,7 +1,7 @@
 import { classify, type Urgency } from '@/lib/triage';
 import { getD1, getRuntimeConfig } from '@/lib/server-db';
 
-type LineProfile = { userId?: string; displayName?: string };
+type LineProfile = { userId?: string; displayName?: string; pictureUrl?: string };
 type IntakeBody = { kind?: 'profile' | 'report' | 'symptom'; accessToken?: string; data?: Record<string, unknown> };
 
 async function stableId(value: string) {
@@ -13,16 +13,16 @@ async function verifyLineUser(accessToken: string) {
   const response = await fetch('https://api.line.me/v2/profile', { headers: { authorization: `Bearer ${accessToken}` }, cache: 'no-store' });
   if (!response.ok) return null;
   const profile = await response.json() as LineProfile;
-  return profile.userId ? { userId: profile.userId, displayName: profile.displayName || 'ผู้ใช้ LINE' } : null;
+  return profile.userId ? { userId: profile.userId, displayName: profile.displayName || 'ผู้ใช้ LINE', avatarUrl: profile.pictureUrl || null } : null;
 }
 
-async function ensurePatient(userId: string, displayName: string) {
+async function ensurePatient(userId: string, displayName: string, avatarUrl: string | null) {
   const db = getD1();
   const id = await stableId(userId);
   const now = new Date().toISOString();
-  await db.prepare(`insert into patients (id, line_user_id, display_name, urgency, status, intake_json, created_at, updated_at)
-    values (?, ?, ?, 'green', 'awaiting_staff', '{}', ?, ?)
-    on conflict(line_user_id) do update set updated_at = excluded.updated_at`).bind(id, userId, displayName, now, now).run();
+  await db.prepare(`insert into patients (id, line_user_id, display_name, avatar_url, urgency, status, intake_json, created_at, updated_at)
+    values (?, ?, ?, ?, 'green', 'awaiting_staff', '{}', ?, ?)
+    on conflict(line_user_id) do update set avatar_url = coalesce(excluded.avatar_url, patients.avatar_url), updated_at = excluded.updated_at`).bind(id, userId, displayName, avatarUrl, now, now).run();
   return { id, now };
 }
 
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   if (!lineProfile) return Response.json({ error: 'ยืนยันบัญชี LINE ไม่สำเร็จ กรุณาปิดแล้วเปิดแบบฟอร์มใหม่' }, { status: 401 });
 
   const db = getD1();
-  const patient = await ensurePatient(lineProfile.userId, lineProfile.displayName);
+  const patient = await ensurePatient(lineProfile.userId, lineProfile.displayName, lineProfile.avatarUrl);
 
   if (body.kind === 'profile') {
     const name = text(body.data, 'name');

@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
-const required = ['LINE_CHANNEL_ACCESS_TOKEN', 'LIFF_HEALTH_URL', 'LIFF_CARE_URL', 'LIFF_ASSESSMENT_URL'];
+const required = ['LINE_CHANNEL_ACCESS_TOKEN', 'LIFF_HEALTH_URL', 'LIFF_CARE_URL', 'LIFF_PROFILE_URL', 'LIFF_SYMPTOM_URL'];
 const missing = required.filter((name) => !process.env[name]);
 if (missing.length) throw new Error(`Missing environment variables: ${missing.join(', ')}`);
 
@@ -10,7 +10,8 @@ const template = await readFile(new URL('./rich-menu.template.json', import.meta
 const menu = template
   .replace('__LIFF_HEALTH_URL__', process.env.LIFF_HEALTH_URL)
   .replace('__LIFF_CARE_URL__', process.env.LIFF_CARE_URL)
-  .replace('__LIFF_ASSESSMENT_URL__', process.env.LIFF_ASSESSMENT_URL);
+  .replace('__LIFF_PROFILE_URL__', process.env.LIFF_PROFILE_URL)
+  .replace('__LIFF_SYMPTOM_URL__', process.env.LIFF_SYMPTOM_URL);
 
 const create = await fetch('https://api.line.me/v2/bot/richmenu', {
   method: 'POST',

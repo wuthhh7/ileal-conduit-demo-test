@@ -1,12 +1,12 @@
 {
   "size": { "width": 2500, "height": 1686 },
   "selected": true,
-  "name": "Siriraj Urology Care Demo",
+  "name": "Ilieal Conduit Care",
   "chatBarText": "เมนูบริการ",
   "areas": [
     { "bounds": { "x": 0, "y": 0, "width": 1250, "height": 843 }, "action": { "type": "uri", "label": "ข้อมูลสุขภาพ", "uri": "__LIFF_HEALTH_URL__" } },
     { "bounds": { "x": 1250, "y": 0, "width": 1250, "height": 843 }, "action": { "type": "uri", "label": "การดูแลผู้ป่วย", "uri": "__LIFF_CARE_URL__" } },
-    { "bounds": { "x": 0, "y": 843, "width": 1250, "height": 843 }, "action": { "type": "uri", "label": "แบบประเมิน", "uri": "__LIFF_ASSESSMENT_URL__" } },
-    { "bounds": { "x": 1250, "y": 843, "width": 1250, "height": 843 }, "action": { "type": "message", "label": "ติดต่อเร่งด่วน", "text": "ติดต่อพยาบาลเร่งด่วน" } }
+    { "bounds": { "x": 0, "y": 843, "width": 1250, "height": 843 }, "action": { "type": "uri", "label": "กรอกประวัติ", "uri": "__LIFF_PROFILE_URL__" } },
+    { "bounds": { "x": 1250, "y": 843, "width": 1250, "height": 843 }, "action": { "type": "uri", "label": "แจ้งอาการ", "uri": "__LIFF_SYMPTOM_URL__" } }
   ]
 }

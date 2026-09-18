@@ -37,6 +37,14 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
+/.impeccable-engine/
+/.impeccable/
+/.impeccable/review/
 
 .vercel
+/.netlify/
 .env*
+.env*
+
+# Local Netlify folder
+.netlify

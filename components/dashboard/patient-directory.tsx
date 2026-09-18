@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Download, History, Search, UsersRound } from 'lucide-react';
+import { ChevronLeft, ChevronRight, History, Search, UsersRound } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { DashboardLogin } from './dashboard-login';
 import { DashboardShell } from './dashboard-shell';
@@ -12,10 +12,6 @@ import { useDashboardData } from './use-dashboard-data';
 import styles from './dashboard.module.css';
 
 const PAGE_SIZE = 8;
-
-function csvCell(value: string | number | null) {
-  return `"${String(value ?? '').replaceAll('"', '""')}"`;
-}
 
 export function PatientDirectory() {
   const { data, needsLogin, error, loading, load } = useDashboardData();
@@ -37,25 +33,12 @@ export function PatientDirectory() {
   const currentPage = Math.min(page, totalPages);
   const visiblePatients = patients.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  function exportPatients() {
-    const header = ['ชื่อผู้ป่วย', 'อายุ', 'วันที่แจ้งปัญหาล่าสุด', 'จำนวนครั้งการแจ้งปัญหา'];
-    const rows = patients.map((patient) => [patient.displayName, patient.age ? `${patient.age} ปี` : '', patient.latestIssueAt ? thaiDate(patient.latestIssueAt) : '', patient.issueCount]);
-    const csv = `\uFEFF${[header, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n')}`;
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = 'patients.csv';
-    anchor.click();
-    URL.revokeObjectURL(url);
-  }
-
   if (needsLogin) return <DashboardLogin onSuccess={load}/>;
   return <DashboardShell title="ผู้ป่วย" description="รายชื่อผู้ป่วยและประวัติการแจ้งปัญหาแต่ละราย" onRefresh={load}>
     {error && <div className={styles.error}>{error}</div>}
     <section className={styles.tablePanel}>
       <div className={styles.tableToolbar}>
         <label className={styles.tableSearch}><Search/><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="ค้นหาชื่อหรือปัญหาที่เคยแจ้ง..."/></label>
-        <button type="button" className={styles.exportButton} onClick={exportPatients} disabled={!patients.length}><Download/>ส่งออก CSV</button>
       </div>
 
       {loading && !data ? <div className={styles.loadingRows}><i/><i/><i/></div> : visiblePatients.length ? <>

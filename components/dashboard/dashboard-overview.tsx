@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, MessageSquareHeart, Users } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, Users } from 'lucide-react';
 import { DashboardLogin } from './dashboard-login';
 import { DashboardShell } from './dashboard-shell';
 import { PatientCard } from './patient-card';
@@ -26,19 +26,11 @@ export function DashboardOverview() {
       <article><span className={styles.metricIcon}><CheckCircle2/></span><div><small>กำลังติดตาม</small><strong>{tracking}</strong><p>อยู่ระหว่างดูแล</p></div></article>
     </section>
 
-    <section className={styles.quickPanels}>
+    <section className={styles.quickPanelsSingle}>
       <article className={styles.priorityPanel}>
         <header><div><span>ลำดับความสำคัญ</span><h2>ผู้ป่วยที่ควรตรวจสอบ</h2></div><Link href="/dashboard/patients">ดูผู้ป่วยทั้งหมด<ArrowRight/></Link></header>
         {loading ? <div className={styles.loadingRows}><i/><i/><i/></div> : priority.length ? <div className={styles.priorityGrid}>{priority.map((patient) => <PatientCard key={patient.id} patient={patient}/>)}</div> : <div className={styles.empty}><CheckCircle2/><h3>ไม่มีเคสที่ต้องเร่งติดตาม</h3><p>ขณะนี้ผู้ป่วยทุกคนได้รับการตรวจสอบแล้ว</p></div>}
       </article>
-      <aside className={styles.assessmentPreview}>
-        <span className={styles.roundIcon}><MessageSquareHeart/></span>
-        <small>ผลประเมินการใช้งาน</small>
-        <strong>{Number(data?.assessments.averageOverall || 0).toFixed(1)}<em>/5</em></strong>
-        <p>จากแบบประเมิน {Number(data?.assessments.count || 0)} รายการ</p>
-        <div><span>พึงพอใจ 4–5 คะแนน</span><b>{Math.round(Number(data?.assessments.positiveRate || 0))}%</b></div>
-        <Link href="/dashboard/assessments">เปิดหน้าผลประเมิน<ArrowRight/></Link>
-      </aside>
     </section>
   </DashboardShell>;
 }

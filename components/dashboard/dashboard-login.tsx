@@ -35,8 +35,8 @@ export function DashboardLogin({ onSuccess }: { onSuccess: () => void | Promise<
       <p>ระบบสำหรับทีมพยาบาล</p>
       <h1>เข้าสู่ระบบดูแลผู้ป่วย</h1>
       <span className={styles.loginHint}><LockKeyhole/>ข้อมูลนี้สำหรับเจ้าหน้าที่ที่ได้รับอนุญาต</span>
-      <label htmlFor="dashboard-username">Username<Input id="dashboard-username" name="username" type="text" required autoComplete="username" autoCapitalize="none" spellCheck={false} className="mt-2 h-12"/></label>
-      <label htmlFor="dashboard-password">Password<Input id="dashboard-password" name="password" type="password" required autoComplete="current-password" className="mt-2 h-12"/></label>
+      <label htmlFor="dashboard-username">Username<Input id="dashboard-username" name="username" type="text" required autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="Username" className="mt-2 h-12"/></label>
+      <label htmlFor="dashboard-password">Password<Input id="dashboard-password" name="password" type="password" required autoComplete="current-password" placeholder="กรอกรหัสผ่าน" className="mt-2 h-12"/></label>
       {error && <div className={styles.error}>{error}</div>}
       <Button type="submit" disabled={submitting} className={styles.primaryButton}>{submitting ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่แดชบอร์ด'}</Button>
     </form>

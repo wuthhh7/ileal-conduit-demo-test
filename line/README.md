@@ -1,22 +1,24 @@
 # LINE setup
 
-The web app provides four LIFF endpoint URLs:
+The rich menu has three actions:
 
-- `/liff/health`
-- `/liff/care`
+- `/liff/content` for the combined health information and care guidance hub
 - `/liff/profile`
 - `/liff/symptom`
 
-Create one LIFF app for each endpoint in LINE Developers, then use each generated
-`https://liff.line.me/{liffId}` URL in the rich menu setup script.
+Create LIFF apps for the profile and symptom endpoints, then use each generated
+`https://liff.line.me/{liffId}` URL in the rich menu setup script. The combined
+content hub uses the deployed website URL by default.
 
 Required environment variables:
 
 - `LINE_CHANNEL_ACCESS_TOKEN`
-- `LIFF_HEALTH_URL`
-- `LIFF_CARE_URL`
 - `LIFF_PROFILE_URL`
 - `LIFF_SYMPTOM_URL`
+
+Optional:
+
+- `CONTENT_HUB_URL` (defaults to `https://ileal-conduit-dashboard.netlify.app/liff/content`)
 
 Run `node line/setup-rich-menu.mjs` to create, upload, and set the menu as default.
 The token must stay in the local environment and must not be committed.

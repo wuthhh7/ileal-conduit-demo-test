@@ -1,7 +1,5 @@
 'use client';
 
-import { ServiceMetrics } from './service-metrics';
-
 import Link from 'next/link';
 import {
   CartesianGrid,
@@ -254,7 +252,6 @@ export function DashboardAnalytics() {
       onRefresh={load}
     >
       {error && <div className={styles.error}>{error}</div>}
-      {data && <ServiceMetrics issues={issues} />}
       <section className={styles.dashboardKpis}>
         <Kpi
           icon={<Tickets />}

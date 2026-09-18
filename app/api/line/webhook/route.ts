@@ -119,7 +119,17 @@ export async function POST(request: Request) {
   const raw = await request.arrayBuffer();
   const signature = request.headers.get('x-line-signature') || '';
   if (!(await verifySignature(raw, signature, lineSecret))) return Response.json({ error: 'invalid signature' }, { status: 401 });
-  const body = JSON.parse(new TextDecoder().decode(raw)) as { events?: LineEvent[] };
+  let body: { events?: LineEvent[] };
+  try {
+    const parsed = JSON.parse(new TextDecoder().decode(raw));
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.events) || parsed.events.some((event: unknown) => !event || typeof event !== 'object')) {
+      return Response.json({ error: 'invalid events' }, { status: 400 });
+    }
+    body = parsed;
+  } catch {
+    return Response.json({ error: 'invalid JSON' }, { status: 400 });
+  }
+  if (!body.events?.length) return Response.json({ ok: true });
   const db = getD1();
 
   for (const event of body.events || []) {

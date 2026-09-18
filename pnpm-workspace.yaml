@@ -1,3 +1,6 @@
+shamefullyHoist: true
+publicHoistPattern:
+  - '*'
 allowBuilds:
   esbuild: true
   sharp: true

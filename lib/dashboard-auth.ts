@@ -8,6 +8,7 @@ async function tokenFor(username: string, password: string) {
 
 export async function isDashboardAuthorized(request: Request) {
   const config = getRuntimeConfig();
+  if (!config.dashboardPassword) return false;
   const expected = await tokenFor(config.dashboardUsername, config.dashboardPassword);
   const cookie = request.headers.get('cookie') || '';
   const supplied = cookie.match(/(?:^|;\s*)dashboard_session=([^;]+)/)?.[1] || '';
@@ -16,6 +17,7 @@ export async function isDashboardAuthorized(request: Request) {
 
 export async function createDashboardSession(username: string, password: string) {
   const config = getRuntimeConfig();
+  if (!config.dashboardPassword) return null;
   if (username !== config.dashboardUsername || password !== config.dashboardPassword) return null;
   return tokenFor(username, password);
 }

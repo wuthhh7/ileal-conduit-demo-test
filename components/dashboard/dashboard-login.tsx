@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { HeartPulse, LockKeyhole } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ export function DashboardLogin({ onSuccess }: { onSuccess: () => void | Promise<
       <label htmlFor="dashboard-password">Password<Input id="dashboard-password" name="password" type="password" required autoComplete="current-password" placeholder="กรอกรหัสผ่าน" className="mt-2 h-12"/></label>
       {error && <div className={styles.error}>{error}</div>}
       <Button type="submit" disabled={submitting} className={styles.primaryButton}>{submitting ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่แดชบอร์ด'}</Button>
+      <Link href="/demo" className="mt-4 block text-center text-sm underline">ทดลองระบบด้วยข้อมูลจำลอง — ไม่ต้องเข้าสู่ระบบ</Link>
     </form>
   </main>;
 }

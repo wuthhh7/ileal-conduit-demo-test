@@ -202,7 +202,7 @@ export function getRuntimeConfig() {
     lineSecret: process.env.LINE_CHANNEL_SECRET || '',
     lineToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || '',
     dashboardUsername: 'admin',
-    dashboardPassword: process.env.DASHBOARD_PASSWORD || 'demo1234',
+    dashboardPassword: process.env.DASHBOARD_PASSWORD || '',
     nursePhone: process.env.NURSE_PHONE || 'รอระบุเบอร์พยาบาล',
     publicBaseUrl: process.env.PUBLIC_BASE_URL || '',
     liffProfileUrl:

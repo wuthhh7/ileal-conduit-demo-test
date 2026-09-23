@@ -144,6 +144,10 @@ export function DashboardShell({
             const isPatientDetail = /^\/dashboard\/patients\/[^/]+$/.test(
               pathname,
             );
+            const startsNewGroup =
+              item.group !== undefined && item.group !== nav[index - 1]?.group;
+            const groupLabel =
+              item.group === 'ปัญหา' ? 'ปัญหาผู้ป่วย' : item.group;
             const active =
               item.href === '/dashboard/patients'
                 ? pathname === item.href || isPatientDetail
@@ -151,11 +155,9 @@ export function DashboardShell({
             const Icon = item.icon;
             return (
               <span key={item.href}>
-                {index === 1 && <span className={styles.navGroup}>ผู้ป่วย</span>}
-                {index === 2 && (
-                  <span className={styles.navGroup}>ปัญหาผู้ป่วย</span>
+                {startsNewGroup && groupLabel && (
+                  <span className={styles.navGroup}>{groupLabel}</span>
                 )}
-                {index === 5 && <span className={styles.navGroup}>เนื้อหา</span>}
                 <Link
                   href={item.href}
                   className={`${active ? styles.navActive : ''} ${item.group ? styles.navChild : ''}`}

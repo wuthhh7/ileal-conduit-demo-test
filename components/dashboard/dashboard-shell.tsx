@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { BrandMark } from './brand-mark';
 import { PatientAvatar } from './patient-avatar';
 import {
   DashboardToastViewport,
@@ -126,7 +127,7 @@ export function DashboardShell({
     <main className={styles.app} data-theme={theme} data-motion="on">
       <aside className={`${styles.sidebar} ${open ? styles.sidebarOpen : ''}`}>
         <div className={styles.brand}>
-          <span className={styles.motionMark} aria-hidden="true" />
+          <BrandMark className={styles.brandMark} />
           <div>
             <b>Ilieal Conduit Care</b>
             <small>ระบบติดตามผู้ป่วย</small>

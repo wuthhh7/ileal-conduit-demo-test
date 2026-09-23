@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Clapperboard,
-  HeartPulse,
+  ClipboardCheck,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -36,6 +36,12 @@ const nav = [
     href: '/dashboard/issues/unanswered',
     label: 'เรื่องที่ยังไม่ตอบกลับ',
     icon: MessageSquareWarning,
+    group: 'ปัญหา',
+  },
+  {
+    href: '/dashboard/issues/in-progress',
+    label: 'กำลังตรวจสอบ',
+    icon: ClipboardCheck,
     group: 'ปัญหา',
   },
   {
@@ -127,9 +133,7 @@ export function DashboardShell({
     <main className={styles.app} data-theme={theme} data-motion="on">
       <aside className={`${styles.sidebar} ${open ? styles.sidebarOpen : ''}`}>
         <div className={styles.brand}>
-          <span>
-            <HeartPulse />
-          </span>
+          <span className={styles.motionMark} aria-hidden="true" />
           <div>
             <b>Ilieal Conduit Care</b>
             <small>ระบบติดตามผู้ป่วย</small>
@@ -158,7 +162,7 @@ export function DashboardShell({
                 {index === 2 && (
                   <span className={styles.navGroup}>ปัญหาผู้ป่วย</span>
                 )}
-                {index === 4 && <span className={styles.navGroup}>เนื้อหา</span>}
+                {index === 5 && <span className={styles.navGroup}>เนื้อหา</span>}
                 <Link
                   href={item.href}
                   className={`${active ? styles.navActive : ''} ${item.group ? styles.navChild : ''}`}

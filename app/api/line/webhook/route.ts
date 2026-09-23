@@ -1,5 +1,6 @@
 import { getD1, getRuntimeConfig } from '@/lib/server-db';
-import { classify, nextIntakeReply } from '@/lib/triage';
+import { menuGuideLineMessage, welcomeLineMessage } from '@/lib/line-messages';
+import { classify } from '@/lib/triage';
 
 type LineEvent = {
   type: string;
@@ -7,10 +8,6 @@ type LineEvent = {
   source?: { userId?: string };
   message?: { type?: string; text?: string };
 };
-
-function stringValue(value: unknown, fallback = '') {
-  return typeof value === 'string' || typeof value === 'number' ? String(value) : fallback;
-}
 
 async function verifySignature(raw: ArrayBuffer, signature: string, secret: string) {
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
@@ -43,28 +40,6 @@ async function replyLine(replyToken: string | undefined, messages: unknown[]) {
   if (!response.ok) console.error('LINE reply failed', response.status, await response.text());
 }
 
-function welcomeFlex(profileUrl: string, reportUrl: string) {
-  return {
-    type: 'flex',
-    altText: 'กรอกประวัติหรือแจ้งปัญหา',
-    contents: {
-      type: 'carousel',
-      contents: [
-        { type: 'bubble', body: { type: 'box', layout: 'vertical', spacing: 'md', contents: [
-          { type: 'text', text: 'กรอกประวัติ', weight: 'bold', size: 'xl', color: '#183153' },
-          { type: 'text', text: 'บันทึกข้อมูลพื้นฐานก่อนเริ่มติดตามอาการ', wrap: true, color: '#66758a' },
-          { type: 'button', style: 'primary', color: '#176b87', action: { type: 'uri', label: 'เปิดแบบฟอร์ม', uri: profileUrl } },
-        ] } },
-        { type: 'bubble', body: { type: 'box', layout: 'vertical', spacing: 'md', contents: [
-          { type: 'text', text: 'แจ้งปัญหา', weight: 'bold', size: 'xl', color: '#183153' },
-          { type: 'text', text: 'ส่งเรื่องให้พยาบาลตรวจสอบและตอบกลับทาง LINE', wrap: true, color: '#66758a' },
-          { type: 'button', style: 'primary', color: '#15a394', action: { type: 'uri', label: 'เปิดแบบฟอร์ม', uri: reportUrl } },
-        ] } },
-      ],
-    },
-  };
-}
-
 async function getLineProfile(lineUserId: string) {
   const token = getRuntimeConfig().lineToken;
   if (!token) return null;
@@ -88,33 +63,8 @@ async function ensurePatient(lineUserId: string) {
   return db.prepare(`select * from patients where line_user_id = ?`).bind(lineUserId).first<Record<string, unknown>>();
 }
 
-async function handleProfile(patient: Record<string, unknown>, text: string) {
-  const db = getD1();
-  const id = stringValue(patient.id);
-  const field = stringValue(patient.intake_field);
-  const now = new Date().toISOString();
-  if (field === 'profile_name') {
-    await db.prepare(`update patients set display_name = ?, intake_field = 'profile_age', updated_at = ? where id = ?`).bind(text.slice(0, 120), now, id).run();
-    return { text: 'อายุเท่าไรคะ กรุณาพิมพ์เป็นตัวเลข', choices: [] };
-  }
-  if (field === 'profile_age') {
-    const age = Number(text.replace(/[^0-9]/g, ''));
-    if (!Number.isInteger(age) || age < 1 || age > 120) return { text: 'กรุณาพิมพ์อายุเป็นตัวเลขระหว่าง 1–120 ปีค่ะ', choices: [] };
-    await db.prepare(`update patients set age = ?, intake_field = 'profile_procedure', updated_at = ? where id = ?`).bind(age, now, id).run();
-    return { text: 'กรุณาระบุการรักษาหรือหัตถการ เช่น หลังผ่าตัดหรือหลังถอดสายสวน', choices: [] };
-  }
-  if (field === 'profile_procedure') {
-    await db.prepare(`update patients set procedure = ?, intake_field = 'profile_discharge', updated_at = ? where id = ?`).bind(text.slice(0, 300), now, id).run();
-    return { text: 'วันนี้เป็นวันที่เท่าไรหลังออกจากโรงพยาบาลคะ กรุณาพิมพ์เป็นตัวเลข', choices: [] };
-  }
-  const day = Number(text.replace(/[^0-9]/g, ''));
-  if (!Number.isInteger(day) || day < 0 || day > 365) return { text: 'กรุณาพิมพ์จำนวนวันเป็นตัวเลข 0–365 ค่ะ', choices: [] };
-  await db.prepare(`update patients set discharge_day = ?, intake_field = null, updated_at = ? where id = ?`).bind(day, now, id).run();
-  return { text: 'บันทึกประวัติเบื้องต้นครบแล้วค่ะ คุณสามารถเลือก “แจ้งอาการ” ได้ทันที', choices: ['แจ้งอาการ'] };
-}
-
 export async function POST(request: Request) {
-  const { lineSecret, nursePhone, liffProfileUrl, liffSymptomUrl } = getRuntimeConfig();
+  const { lineSecret, nursePhone } = getRuntimeConfig();
   if (!lineSecret) return Response.json({ error: 'LINE is not configured' }, { status: 503 });
   const raw = await request.arrayBuffer();
   const signature = request.headers.get('x-line-signature') || '';
@@ -137,35 +87,33 @@ export async function POST(request: Request) {
     const patient = await ensurePatient(event.source.userId);
     if (!patient) continue;
     if (event.type === 'follow') {
-      await replyLine(event.replyToken, [welcomeFlex(liffProfileUrl, liffSymptomUrl)]);
+      await replyLine(event.replyToken, [{ type: 'text', text: welcomeLineMessage() }]);
       continue;
     }
     if (event.type !== 'message' || event.message?.type !== 'text') continue;
     const text = String(event.message.text || '').trim().slice(0, 1000);
     const now = new Date().toISOString();
     await db.prepare(`insert into messages (patient_id, role, body, created_at) values (?, 'user', ?, ?)`).bind(patient.id, text, now).run();
+    if (patient.intake_field) {
+      await db.prepare(`update patients set intake_field = null, updated_at = ? where id = ?`)
+        .bind(now, patient.id).run();
+    }
 
     let reply: { text: string; choices: string[]; urgency?: string; reason?: string };
     if (text === 'เมนู' || text === 'กรอกประวัติ' || text === 'แจ้งอาการ' || text === 'แจ้งปัญหา') {
-      await db.prepare(`insert into messages (patient_id, role, body, reason, created_at) values (?, 'bot', 'เปิดเมนูแบบฟอร์ม LIFF', 'แสดงเมนู', ?)`).bind(patient.id, now).run();
-      await replyLine(event.replyToken, [welcomeFlex(liffProfileUrl, liffSymptomUrl)]);
+      const guide = menuGuideLineMessage();
+      await db.prepare(`insert into messages (patient_id, role, body, reason, created_at) values (?, 'bot', ?, 'แนะนำ Rich Menu', ?)`)
+        .bind(patient.id, guide, now).run();
+      await replyLine(event.replyToken, [{ type: 'text', text: guide }]);
       continue;
     } else if (text === 'ติดต่อพยาบาลเร่งด่วน' || text === 'ติดต่อพยาบาล') {
       await db.prepare(`update patients set urgency = 'red', status = 'awaiting_staff', updated_at = ? where id = ?`).bind(now, patient.id).run();
       reply = { text: `กรุณาติดต่อพยาบาลที่ ${nursePhone} หากมีอาการรุนแรงหรือฉุกเฉินให้ไปห้องฉุกเฉินหรือโทร 1669 ทันที`, choices: [], urgency: 'red', reason: 'ผู้ใช้เลือกติดต่อเร่งด่วน' };
-    } else if (stringValue(patient.intake_field).startsWith('profile_')) {
-      reply = await handleProfile(patient, text);
-    } else if (patient.intake_field) {
-      const intake = JSON.parse(stringValue(patient.intake_json, '{}')) as Record<string, string>;
-      const result = nextIntakeReply(stringValue(patient.intake_field), intake, text);
-      await db.prepare(`update patients set urgency = ?, status = 'awaiting_staff', intake_field = ?, intake_json = ?, updated_at = ? where id = ?`)
-        .bind(result.urgency, result.nextField, JSON.stringify(intake), now, patient.id).run();
-      reply = result;
     } else {
       const urgency = classify(text);
       reply = urgency === 'red'
         ? { text: 'ระบบพบข้อความที่อาจต้องให้พยาบาลตรวจสอบโดยเร็ว กรุณาติดต่อพยาบาลหรือไปห้องฉุกเฉินทันที', choices: ['ติดต่อพยาบาล'], urgency, reason: 'พบคำสำคัญเร่งด่วน' }
-        : { text: 'กรุณาเลือกสิ่งที่ต้องการทำค่ะ', choices: ['กรอกประวัติ', 'แจ้งปัญหา'], urgency };
+        : { text: menuGuideLineMessage(), choices: [], urgency };
       await db.prepare(`update patients set urgency = ?, status = 'awaiting_staff', updated_at = ? where id = ?`).bind(urgency, now, patient.id).run();
     }
 

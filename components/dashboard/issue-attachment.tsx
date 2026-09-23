@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { Maximize2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './dashboard.module.css';
 
 export function IssueAttachment({ src, alt }: { src: string; alt: string }) {
@@ -39,41 +40,43 @@ export function IssueAttachment({ src, alt }: { src: string; alt: string }) {
           </small>
         </button>
       </div>
-      {isOpen && (
-        <div
-          className={styles.imageViewerBackdrop}
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setIsOpen(false);
-          }}
-        >
-          <dialog
-            open
-            className={styles.imageViewer}
-            aria-modal="true"
-            aria-label="รูปประกอบจากผู้ป่วย"
+      {isOpen &&
+        createPortal(
+          <div
+            className={styles.imageViewerBackdrop}
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setIsOpen(false);
+            }}
           >
-            <button
-              type="button"
-              className={styles.imageViewerClose}
-              onClick={() => setIsOpen(false)}
-              aria-label="ปิดรูป"
+            <dialog
+              open
+              className={styles.imageViewer}
+              aria-modal="true"
+              aria-label="รูปประกอบจากผู้ป่วย"
             >
-              <X />
-            </button>
-            <div className={styles.imageViewerMedia}>
-              <Image
-                src={src}
-                alt={alt}
-                width={1400}
-                height={1000}
-                unoptimized
-              />
-            </div>
-            <p>รูปประกอบจากผู้ป่วย</p>
-          </dialog>
-        </div>
-      )}
+              <button
+                type="button"
+                className={styles.imageViewerClose}
+                onClick={() => setIsOpen(false)}
+                aria-label="ปิดรูป"
+              >
+                <X />
+              </button>
+              <div className={styles.imageViewerMedia}>
+                <Image
+                  src={src}
+                  alt={alt}
+                  fill
+                  sizes="(max-width: 1080px) 100vw, 1080px"
+                  unoptimized
+                />
+              </div>
+              <p>รูปประกอบจากผู้ป่วย</p>
+            </dialog>
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

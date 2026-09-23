@@ -46,6 +46,7 @@ export function getD1() {
 }
 
 let issueAttachmentColumnReady: Promise<void> | null = null;
+let issueLocationColumnReady: Promise<void> | null = null;
 let issueUrgencyDataReady: Promise<void> | null = null;
 let videoContentTableReady: Promise<void> | null = null;
 let contentAnalyticsTablesReady: Promise<void> | null = null;
@@ -62,6 +63,20 @@ export function ensureIssueAttachmentColumn() {
       });
   }
   return issueAttachmentColumnReady;
+}
+
+export function ensureIssueLocationColumn() {
+  if (!issueLocationColumnReady) {
+    issueLocationColumnReady = getD1()
+      .prepare('alter table issues add column if not exists location text')
+      .run()
+      .then(() => undefined)
+      .catch((error) => {
+        issueLocationColumnReady = null;
+        throw error;
+      });
+  }
+  return issueLocationColumnReady;
 }
 
 function highestUrgency(values: string[]): Urgency {

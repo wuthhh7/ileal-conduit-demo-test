@@ -1,6 +1,12 @@
-import { classify, classifyReport, type Urgency } from '@/lib/triage';
+import { classify, classifyReport, REPORT_CATEGORIES, type Urgency } from '@/lib/triage';
+import {
+  profileConfirmationLineMessage,
+  reportConfirmationLineMessage,
+  symptomConfirmationLineMessage,
+} from '@/lib/line-messages';
 import {
   ensureIssueAttachmentColumn,
+  ensureIssueLocationColumn,
   ensureIssueUrgencyData,
   getD1,
   getRuntimeConfig,
@@ -140,7 +146,7 @@ export async function POST(request: Request) {
       );
     }
     const summary = `ส่งแบบฟอร์มประวัติ\nชื่อ–นามสกุล: ${name}\nอายุ: ${age} ปี\nเบอร์โทรศัพท์: ${phone}\nLINE ID: ${lineId}`;
-    const reply = 'บันทึกประวัติผู้ป่วยเข้าสู่ระบบของเจ้าหน้าที่เรียบร้อยแล้วค่ะ';
+    const reply = profileConfirmationLineMessage();
     await db
       .prepare(
         `update patients set display_name = ?, age = ?, phone = ?, line_id = ?, procedure = null, discharge_date = null, discharge_day = null, intake_field = null, updated_at = ? where id = ?`,
@@ -166,18 +172,18 @@ export async function POST(request: Request) {
       )
       .bind(patient.id, reply, patient.now)
       .run();
-    await pushToChat(lineProfile.userId, `✅ ${reply}`);
+    await pushToChat(lineProfile.userId, reply);
     return Response.json({ message: 'ประวัติถูกบันทึกและส่งข้อความยืนยันเข้าแชทแล้ว' });
   }
 
   if (body.kind === 'report') {
     const subject = text(body.data, 'subject');
     const category = text(body.data, 'category');
+    const location = text(body.data, 'location');
     const detail = text(body.data, 'detail');
     const onset = text(body.data, 'onset');
     const attachment = imageData(body.data);
-    const allowedCategories = ['ลำไส้ผิดปกติ', 'ความผิดปกติของปัสสาวะ', 'ไข้สูง'];
-    if (!subject || !allowedCategories.includes(category) || !detail || !onset)
+    if (!subject || !REPORT_CATEGORIES.includes(category as (typeof REPORT_CATEGORIES)[number]) || !location || !detail || !onset)
       return Response.json(
         { error: 'ข้อมูลยังไม่ครบหรือประเภทปัญหาไม่ถูกต้อง กรุณาตรวจทุกช่อง' },
         { status: 400 },
@@ -189,19 +195,19 @@ export async function POST(request: Request) {
       );
     await Promise.all([
       ensureIssueAttachmentColumn(),
+      ensureIssueLocationColumn(),
       ensureIssueUrgencyData(),
     ]);
     const urgency = classifyReport(category, onset, `${subject} ${detail}`);
-    const urgencyText =
-      urgency === 'red' ? 'เร่งด่วน' : urgency === 'yellow' ? 'เฝ้าระวัง' : 'ปกติ';
-    const summary = `แจ้งปัญหาผ่านแบบฟอร์ม\nหัวข้อ: ${subject}\nประเภท: ${category}\nเริ่มพบ: ${onset}\nรายละเอียด: ${detail}${attachment ? '\nรูปประกอบ: แนบแล้ว' : ''}`;
+    const summary = `แจ้งปัญหาผ่านแบบฟอร์ม\nหัวข้อ: ${subject}\nประเภท: ${category}\nตำแหน่ง: ${location}\nเริ่มพบ: ${onset}\nรายละเอียด: ${detail}${attachment ? '\nรูปประกอบ: แนบแล้ว' : ''}`;
     await db
-      .prepare(`insert into issues (patient_id, subject, category, detail, onset, urgency, status, image_data, created_at)
-      values (?, ?, ?, ?, ?, ?, 'unanswered', ?, ?)`)
+      .prepare(`insert into issues (patient_id, subject, category, location, detail, onset, urgency, status, image_data, created_at)
+      values (?, ?, ?, ?, ?, ?, ?, 'unanswered', ?, ?)`)
       .bind(
         patient.id,
         subject.slice(0, 120),
         category.slice(0, 80),
+        location.slice(0, 160),
         detail.slice(0, 1500),
         onset.slice(0, 80),
         urgency,
@@ -219,17 +225,14 @@ export async function POST(request: Request) {
       )
       .bind(patient.id, summary, patient.now)
       .run();
-    const reply = `รับเรื่อง “${subject}” เรียบร้อยแล้วค่ะ พยาบาลจะตรวจสอบและตอบกลับทางแชท LINE นี้`;
+    const reply = reportConfirmationLineMessage(subject, urgency);
     await db
       .prepare(
         `insert into messages (patient_id, role, body, reason, created_at) values (?, 'bot', ?, 'ยืนยันรับเรื่อง', ?)`,
       )
       .bind(patient.id, reply, patient.now)
       .run();
-    await pushToChat(
-      lineProfile.userId,
-      `📨 ${reply}\nระดับการติดตามเบื้องต้น: ${urgencyText}`,
-    );
+    await pushToChat(lineProfile.userId, reply);
     return Response.json({
       message: 'ส่งเรื่องให้พยาบาลแล้ว กรุณารอคำตอบในแชท LINE',
       urgency,
@@ -256,13 +259,12 @@ export async function POST(request: Request) {
   let urgency: Urgency = classify(Object.values(values).join(' '));
   if (values.severity === 'รุนแรงมาก' || values.urination === 'ปัสสาวะไม่ออก')
     urgency = 'red';
-  const urgencyText =
-    urgency === 'red' ? 'เร่งด่วน' : urgency === 'yellow' ? 'เฝ้าระวัง' : 'ปกติ';
   const summary = `แจ้งอาการผ่านแบบฟอร์ม\nอาการ: ${values.symptom}\nระยะเวลา: ${values.duration}\nความรุนแรง: ${values.severity}\nไข้: ${values.fever}\nการปัสสาวะ: ${values.urination}\nเลือดออก: ${values.bleeding}`;
   const reply =
     urgency === 'red'
       ? 'ระบบพบข้อมูลที่อาจเร่งด่วน กรุณาติดต่อพยาบาลหรือไปห้องฉุกเฉินทันที หากฉุกเฉินโทร 1669'
-      : `ระบบบันทึกอาการครบถ้วนแล้ว ระดับการติดตาม: ${urgencyText} เจ้าหน้าที่สามารถตรวจข้อมูลได้จาก Dashboard`;
+      : 'ระบบบันทึกอาการครบถ้วนแล้ว พยาบาลจะตรวจสอบข้อมูลและตอบกลับทางแชทนี้';
+  const confirmation = symptomConfirmationLineMessage(urgency, reply);
   await db
     .prepare(
       `update patients set urgency = ?, status = 'awaiting_staff', intake_field = null, intake_json = ?, updated_at = ? where id = ?`,
@@ -279,14 +281,11 @@ export async function POST(request: Request) {
     .prepare(
       `insert into messages (patient_id, role, body, reason, created_at) values (?, 'bot', ?, 'คัดกรองจาก LIFF', ?)`,
     )
-    .bind(patient.id, reply, patient.now)
+    .bind(patient.id, confirmation, patient.now)
     .run();
-  await pushToChat(
-    lineProfile.userId,
-    `📋 ได้รับข้อมูลแจ้งอาการแล้ว\n\n${summary}\n\n${reply}`,
-  );
+  await pushToChat(lineProfile.userId, confirmation);
   return Response.json({
-    message: 'ข้อมูลอาการถูกบันทึกและส่งสรุปเข้าแชทแล้ว',
+    message: 'ข้อมูลอาการถูกบันทึกและส่งข้อความยืนยันเข้าแชทแล้ว',
     urgency,
   });
 }

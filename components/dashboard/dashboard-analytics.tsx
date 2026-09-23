@@ -30,6 +30,7 @@ import { DashboardShell } from './dashboard-shell';
 import { PatientAvatar } from './patient-avatar';
 import { thaiDate, urgencyLabel } from './types';
 import { useDashboardData } from './use-dashboard-data';
+import { formatResponseMinutes } from '@/lib/issue-metrics';
 import styles from './dashboard.module.css';
 
 type ChartRange = 'daily' | 'monthly';
@@ -145,6 +146,12 @@ export function DashboardAnalytics() {
 
   const patients = data?.patients || [];
   const issues = data?.issues || [];
+  const issueAnalytics = data?.issueAnalytics || {
+    answered: 0,
+    averageResponseMinutes: 0,
+    medianResponseMinutes: 0,
+    respondedWithin24HoursRate: 0,
+  };
   const answered = issues.filter((issue) => issue.status === 'answered').length;
   const unanswered = issues.filter(
     (issue) => issue.status === 'unanswered',
@@ -278,6 +285,12 @@ export function DashboardAnalytics() {
           value={urgent}
           note="ยังรอคำตอบ"
           tone="danger"
+        />
+        <Kpi
+          icon={<Clock3 />}
+          label="เวลาเฉลี่ยตอบกลับ"
+          value={issueAnalytics.averageResponseMinutes}
+          note={issueAnalytics.answered ? `นาที · มัธยฐาน ${formatResponseMinutes(issueAnalytics.medianResponseMinutes)} · ภายใน 24 ชม. ${issueAnalytics.respondedWithin24HoursRate}%` : 'ยังไม่มีเรื่องที่ตอบแล้ว'}
         />
       </section>
 

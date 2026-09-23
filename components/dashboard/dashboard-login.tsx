@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { HeartPulse, LockKeyhole } from 'lucide-react';
+import { LockKeyhole } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import styles from './dashboard.module.css';
@@ -31,7 +31,7 @@ export function DashboardLogin({ onSuccess }: { onSuccess: () => void | Promise<
 
   return <main className={styles.loginPage}>
     <form className={styles.loginCard} onSubmit={login}>
-      <div className={styles.loginIcon}><HeartPulse/></div>
+      <span className={`${styles.motionMark} ${styles.loginMotionMark}`} aria-hidden="true" />
       <p>ระบบสำหรับทีมพยาบาล</p>
       <h1>เข้าสู่ระบบดูแลผู้ป่วย</h1>
       <span className={styles.loginHint}><LockKeyhole/>ข้อมูลนี้สำหรับเจ้าหน้าที่ที่ได้รับอนุญาต</span>

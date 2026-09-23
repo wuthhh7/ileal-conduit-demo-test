@@ -1,5 +1,14 @@
 export type Urgency = 'green' | 'yellow' | 'red';
 
+export const REPORT_CATEGORIES = [
+  'ลำไส้ผิดปกติ',
+  'ความผิดปกติของปัสสาวะ',
+  'ไข้สูง',
+  'แผลผ่าตัดผิดปกติ',
+] as const;
+
+export type ReportCategory = (typeof REPORT_CATEGORIES)[number];
+
 const questions: Record<string, { text: string; choices: string[] }> = {
   duration: {
     text: 'เริ่มมีอาการมานานเท่าไรแล้วคะ',
@@ -66,6 +75,9 @@ export function classifyReport(category: string, onset: string, text: string) {
 
   // การแจ้งปัญหาลำไส้ให้เจ้าหน้าที่เฝ้าระวังตั้งแต่เริ่มพบ
   if (categoryKey.includes('ลำไส้')) return 'yellow' as const;
+
+  // แผลผ่าตัดควรให้เจ้าหน้าที่ประเมิน แม้ยังไม่มีสัญญาณอันตรายชัดเจน
+  if (categoryKey.includes('แผลผ่าตัด')) return 'yellow' as const;
 
   // กรณีประเภทใหม่ในอนาคต: อาการที่นานเกิน 1 วันไม่ควรถูกจัดเป็นปกติ
   return elapsed >= 3 ? ('yellow' as const) : signalUrgency;

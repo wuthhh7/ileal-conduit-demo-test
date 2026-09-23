@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import {
+  ClipboardCheck,
   CheckCircle2,
   Clock3,
+  MapPin,
   MessageCircleReply,
   Search,
   Send,
@@ -21,17 +23,22 @@ import { useDashboardNotifications } from './dashboard-notifications';
 import { IssueAttachment } from './issue-attachment';
 import { PatientAvatar } from './patient-avatar';
 import type { Issue } from './types';
-import { thaiDate, urgencyLabel } from './types';
+import { issueStatusLabel, thaiDate, urgencyLabel } from './types';
+import { formatResponseMinutes } from '@/lib/issue-metrics';
+import { REPORT_CATEGORIES } from '@/lib/triage';
 import styles from './dashboard.module.css';
 
-export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
+export function IssueDirectory({ view }: { view: Issue['status'] }) {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [needsLogin, setNeedsLogin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [urgencyFilter, setUrgencyFilter] = useState<'all' | Issue['urgency']>('all');
   const [activeReply, setActiveReply] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const { notify } = useDashboardNotifications();
 
   const load = useCallback(async () => {
@@ -72,13 +79,40 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
     return issues.filter(
       (issue) =>
         issue.status === view &&
+        (categoryFilter === 'all' || issue.category === categoryFilter) &&
+        (urgencyFilter === 'all' || issue.urgency === urgencyFilter) &&
         (!normalized ||
-          [issue.displayName, issue.subject, issue.category, issue.detail]
+          [issue.displayName, issue.subject, issue.category, issue.location, issue.detail]
             .join(' ')
             .toLocaleLowerCase('th')
             .includes(normalized)),
     );
-  }, [issues, query, view]);
+  }, [categoryFilter, issues, query, urgencyFilter, view]);
+
+  async function startReview(issue: Issue) {
+    setUpdatingId(issue.id);
+    setError('');
+    const response = await fetch(`/api/issues/${encodeURIComponent(issue.id)}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ status: 'in_progress' }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (response.ok) {
+      notify({
+        title: 'เริ่มตรวจสอบแล้ว',
+        message: `เรื่อง “${issue.subject}” ย้ายไปอยู่ในรายการกำลังตรวจสอบ`,
+        tone: 'success',
+        href: '/dashboard/issues/in-progress',
+      });
+      await load();
+    } else {
+      const message = body.error || 'เปลี่ยนสถานะไม่สำเร็จ กรุณาลองใหม่';
+      setError(message);
+      notify({ title: 'ยังเปลี่ยนสถานะไม่ได้', message, tone: 'urgent' });
+    }
+    setUpdatingId(null);
+  }
 
   async function reply(event: SyntheticEvent<HTMLFormElement>, issue: Issue) {
     event.preventDefault();
@@ -119,14 +153,24 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
 
   if (needsLogin) return <DashboardLogin onSuccess={load} />;
   const unanswered = view === 'unanswered';
+  const pageCopy = {
+    unanswered: {
+      title: 'เรื่องที่ยังไม่ตอบกลับ',
+      description: 'ปัญหาที่ผู้ป่วยส่งจาก LINE และยังไม่ได้เริ่มตรวจสอบ',
+    },
+    in_progress: {
+      title: 'กำลังตรวจสอบ',
+      description: 'ปัญหาที่พยาบาลกำลังตรวจสอบก่อนตอบกลับผู้ป่วย',
+    },
+    answered: {
+      title: 'เรื่องที่ตอบกลับแล้ว',
+      description: 'ประวัติเรื่องที่พยาบาลตอบกลับทาง LINE เรียบร้อยแล้ว',
+    },
+  }[view];
   return (
     <DashboardShell
-      title={unanswered ? 'เรื่องที่ยังไม่ตอบกลับ' : 'เรื่องที่ตอบกลับแล้ว'}
-      description={
-        unanswered
-          ? 'ปัญหาที่ผู้ป่วยส่งจาก LINE และกำลังรอคำตอบจากพยาบาล'
-          : 'ประวัติเรื่องที่พยาบาลตอบกลับทาง LINE เรียบร้อยแล้ว'
-      }
+      title={pageCopy.title}
+      description={pageCopy.description}
       onRefresh={load}
     >
       {error && <div className={styles.error}>{error}</div>}
@@ -138,6 +182,22 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
             onChange={(event) => setQuery(event.target.value)}
             placeholder="ค้นหาชื่อผู้ป่วย หัวข้อ หรือรายละเอียด..."
           />
+        </label>
+        <label className={styles.selectFilter}>
+          ประเภท
+          <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+            <option value="all">ทั้งหมด</option>
+            {REPORT_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+          </select>
+        </label>
+        <label className={styles.selectFilter}>
+          ระดับ
+          <select value={urgencyFilter} onChange={(event) => setUrgencyFilter(event.target.value as typeof urgencyFilter)}>
+            <option value="all">ทั้งหมด</option>
+            <option value="red">เร่งด่วน</option>
+            <option value="yellow">เฝ้าระวัง</option>
+            <option value="green">ปกติ</option>
+          </select>
         </label>
         <span>{visibleIssues.length} เรื่อง</span>
       </div>
@@ -162,6 +222,7 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
                   >
                     {urgencyLabel[issue.urgency]}
                   </span>
+                  <small>{issueStatusLabel[issue.status]}</small>
                   <small>เรื่อง #{issue.id}</small>
                 </div>
                 <time>{thaiDate(issue.createdAt)}</time>
@@ -174,6 +235,12 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
                   <span className={styles.issueOnset}>
                     <Clock3 />
                     เริ่มพบ: {issue.onset}
+                  </span>
+                )}
+                {issue.location && (
+                  <span className={styles.issueOnset}>
+                    <MapPin />
+                    ตำแหน่ง: {issue.location}
                   </span>
                 )}
                 {issue.imageData && (
@@ -195,18 +262,26 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
                     <b>{issue.displayName}</b>
                   </div>
                 </Link>
-                {unanswered && (
-                  <button
-                    onClick={() =>
-                      setActiveReply((current) =>
-                        current === issue.id ? null : issue.id,
-                      )
-                    }
-                  >
-                    <MessageCircleReply />
-                    {activeReply === issue.id ? 'ยกเลิก' : 'ตอบกลับ'}
-                  </button>
-                )}
+                <div className={styles.issueActions}>
+                  {unanswered && (
+                    <button onClick={() => void startReview(issue)} disabled={updatingId === issue.id}>
+                      <ClipboardCheck />
+                      {updatingId === issue.id ? 'กำลังอัปเดต…' : 'เริ่มตรวจสอบ'}
+                    </button>
+                  )}
+                  {view !== 'answered' ? (
+                    <button
+                      onClick={() =>
+                        setActiveReply((current) =>
+                          current === issue.id ? null : issue.id,
+                        )
+                      }
+                    >
+                      <MessageCircleReply />
+                      {activeReply === issue.id ? 'ยกเลิก' : 'ตอบกลับ'}
+                    </button>
+                  ) : null}
+                </div>
               </footer>
               {unanswered && activeReply === issue.id && (
                 <form
@@ -236,6 +311,7 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
                     <time>{thaiDate(issue.repliedAt)}</time>
                   </div>
                   <p>{issue.replyText}</p>
+                  <small>ใช้เวลาตอบกลับ {formatResponseMinutes(issue.responseMinutes)}</small>
                 </div>
               )}
             </article>

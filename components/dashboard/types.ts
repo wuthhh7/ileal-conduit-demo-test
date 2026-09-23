@@ -45,14 +45,16 @@ export type Issue = {
   avatarUrl: string | null;
   subject: string;
   category: string;
+  location: string | null;
   detail: string;
   onset: string | null;
   urgency: Urgency;
-  status: 'unanswered' | 'answered';
+  status: 'unanswered' | 'in_progress' | 'answered';
   imageData: string | null;
   replyText: string | null;
   createdAt: string;
   repliedAt: string | null;
+  responseMinutes: number | null;
 };
 
 export type ContentAnalytics = {
@@ -84,6 +86,12 @@ export type DashboardSummary = {
   patients: Patient[];
   assessments: Assessment;
   issues: Issue[];
+  issueAnalytics: {
+    answered: number;
+    averageResponseMinutes: number;
+    medianResponseMinutes: number;
+    respondedWithin24HoursRate: number;
+  };
   contentAnalytics: ContentAnalytics;
 };
 export type PatientDetailData = {
@@ -107,6 +115,12 @@ export const statusLabel: Record<string, string> = {
   awaiting_staff: 'รอเจ้าหน้าที่',
   in_progress: 'กำลังติดตาม',
   resolved: 'เรียบร้อย',
+};
+
+export const issueStatusLabel: Record<Issue['status'], string> = {
+  unanswered: 'ยังไม่ตรวจสอบ',
+  in_progress: 'กำลังตรวจสอบ',
+  answered: 'ตอบกลับแล้ว',
 };
 
 export function shortSymptom(value: string | null) {

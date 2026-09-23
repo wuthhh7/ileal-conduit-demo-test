@@ -20,18 +20,6 @@
   gap: 12px;
   padding: 0 8px 28px;
 }
-.brand > span {
-  display: grid;
-  width: 44px;
-  height: 44px;
-  place-items: center;
-  border-radius: 14px;
-  background: #fff;
-  color: #137f83;
-}
-.brand svg {
-  width: 24px;
-}
 .brand b,
 .brand small {
   display: block;
@@ -902,15 +890,42 @@
   background: #fff;
   box-shadow: 0 25px 65px rgb(23 50 77/0.12);
 }
-.loginIcon {
-  display: grid;
-  width: 58px;
-  height: 58px;
-  margin: 0 auto 18px;
-  place-items: center;
-  border-radius: 18px;
-  background: #176676;
-  color: #fff;
+.motionMark {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 38px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #167e94, #4bbcb7);
+}
+.motionMark::after {
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, #e7ffff, transparent);
+  content: '';
+  animation: motionMarkSweep 2.2s ease-in-out infinite;
+}
+.loginMotionMark {
+  width: 72px;
+  margin: 8px auto 24px;
+}
+@keyframes motionMarkSweep {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(240%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .motionMark::after {
+    animation: none;
+    transform: translateX(65%);
+  }
 }
 .loginCard > p,
 .loginCard h1 {
@@ -2846,16 +2861,6 @@
   padding: 4px 7px 24px;
   border-bottom: 1px solid #e7edef;
 }
-.brand > span {
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
-  background: #147d91;
-  color: #fff;
-}
-.brand svg {
-  width: 20px;
-}
 .brand b {
   font-size: 14px;
   letter-spacing: -0.015em;
@@ -3609,12 +3614,6 @@
   background: #fff;
   box-shadow: 0 14px 36px rgb(36 67 81/0.09);
 }
-.loginIcon {
-  width: 48px;
-  height: 48px;
-  border-radius: 13px;
-  background: #147d91;
-}
 .loginCard > p {
   margin-top: 18px;
   color: #647984;
@@ -4146,12 +4145,6 @@
     0 28px 64px rgb(35 65 78 / 0.13),
     0 4px 12px rgb(35 65 78 / 0.06),
     inset 0 1px 0 rgb(255 255 255 / 0.9);
-}
-.loginIcon {
-  border: 1px solid rgb(255 255 255 / 0.22);
-  box-shadow:
-    0 9px 18px rgb(20 125 145 / 0.22),
-    inset 0 1px 0 rgb(255 255 255 / 0.22);
 }
 .loginHint {
   padding: 8px 12px;

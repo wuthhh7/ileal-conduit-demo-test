@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, Clock3, ContactRound, MapPin, MessageSquareWarning } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Clock3, ContactRound, MessageSquareWarning } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { DashboardLogin } from './dashboard-login';
 import { DashboardShell } from './dashboard-shell';
@@ -52,8 +52,7 @@ export function PatientDetail({ patientId }: { patientId: string }) {
           <h3>{issue.subject}</h3><p>{issue.detail}</p>
           {issue.imageData && <IssueAttachment src={issue.imageData} alt="รูปประกอบจากผู้ป่วย"/>}
           {issue.onset && <small className={styles.issueHistoryOnset}><Clock3/>เริ่มพบ: {issue.onset}</small>}
-          {issue.location && <small className={styles.issueHistoryOnset}><MapPin/>ตำแหน่ง: {issue.location}</small>}
-          {issue.status === 'answered' ? <div className={styles.issueHistoryReply}><b><CheckCircle2/>พยาบาลตอบกลับแล้ว</b><p>{issue.replyText}</p><time>{thaiDate(issue.repliedAt)} · ใช้เวลา {formatResponseMinutes(issue.responseMinutes)}</time></div> : <Link href={`/dashboard/issues/${issue.status === 'in_progress' ? 'in-progress' : 'unanswered'}#issue-${issue.id}`} className={styles.issueHistoryPending}>{issueStatusLabel[issue.status]} — ไปที่หน้าตรวจสอบ</Link>}
+          {issue.status === 'answered' ? <div className={styles.issueHistoryReply}><b><CheckCircle2/>พยาบาลตอบกลับแล้ว</b><p>{issue.replyText}</p><time>{thaiDate(issue.repliedAt)} · ใช้เวลา {formatResponseMinutes(issue.responseMinutes)}</time></div> : <Link href={`/dashboard/issues/unanswered#issue-${issue.id}`} className={styles.issueHistoryPending}>{issueStatusLabel[issue.status]} — เปิดเรื่องเพื่อตอบกลับ</Link>}
         </article>)}</div> : <div className={styles.emptySmall}>ผู้ป่วยรายนี้ยังไม่เคยแจ้งปัญหา</div>}
       </section>
     </>}

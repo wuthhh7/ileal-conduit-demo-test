@@ -121,8 +121,7 @@ export function LiffIntakeForm({ mode, liffId }: { mode: Mode; liffId: string })
       </> : <>
         <label className="field-label">หัวข้อปัญหา *<input name="subject" required maxLength={120} placeholder="เช่น สายหลวม มีเลือดออก หรือสอบถามการดูแล"/></label>
         <div className="field-grid"><label className="field-label">ประเภทปัญหา *<select name="category" required defaultValue=""><option value="" disabled>เลือกประเภท</option>{REPORT_CATEGORIES.map((category) => <option key={category}>{category}</option>)}</select></label><label className="field-label">เริ่มพบปัญหาเมื่อไร *<select name="onset" required defaultValue=""><option value="" disabled>เลือกช่วงเวลา</option><option>ภายใน 1 ชั่วโมง</option><option>1–6 ชั่วโมง</option><option>มากกว่า 6 ชั่วโมง</option><option>มากกว่า 1 วัน</option></select></label></div>
-        <label className="field-label">ตำแหน่งที่พบปัญหา *<input name="location" required maxLength={160} placeholder="เช่น รอบแผลผ่าตัด ด้านซ้ายของหน้าท้อง หรือบริเวณถุงปัสสาวะ"/></label>
-        <label className="field-label">รายละเอียดปัญหา *<textarea name="detail" required maxLength={1500} placeholder="อธิบายสิ่งที่พบ อาการ ตำแหน่ง และสิ่งที่ได้ลองทำไปแล้ว"/></label>
+        <label className="field-label">รายละเอียดปัญหา *<textarea name="detail" required maxLength={1500} placeholder="อธิบายอาการ สิ่งที่พบ และสิ่งที่ได้ลองทำไปแล้ว"/></label>
         <div className="attachment-field">
           <div className="attachment-heading"><span>รูปประกอบ</span><small>ไม่บังคับ</small></div>
           <label htmlFor="issue-attachment" className="attachment-picker">

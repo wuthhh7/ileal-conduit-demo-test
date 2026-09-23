@@ -45,7 +45,6 @@ export type Issue = {
   avatarUrl: string | null;
   subject: string;
   category: string;
-  location: string | null;
   detail: string;
   onset: string | null;
   urgency: Urgency;
@@ -118,8 +117,8 @@ export const statusLabel: Record<string, string> = {
 };
 
 export const issueStatusLabel: Record<Issue['status'], string> = {
-  unanswered: 'ยังไม่ตรวจสอบ',
-  in_progress: 'กำลังตรวจสอบ',
+  unanswered: 'รอคำตอบ',
+  in_progress: 'รอคำตอบ',
   answered: 'ตอบกลับแล้ว',
 };
 

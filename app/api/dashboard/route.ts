@@ -1,7 +1,6 @@
 import { isDashboardAuthorized } from '@/lib/dashboard-auth';
 import {
   ensureContentAnalyticsTables,
-  ensureIssueLocationColumn,
   ensureIssueUrgencyData,
   ensureVideoContentTable,
   getD1,
@@ -24,7 +23,6 @@ export async function GET(request: Request) {
   await Promise.all([
     ensureVideoContentTable(),
     ensureContentAnalyticsTables(),
-    ensureIssueLocationColumn(),
     ensureIssueUrgencyData(),
   ]);
   const db = getD1();
@@ -74,10 +72,10 @@ export async function GET(request: Request) {
       .all(),
     db
       .prepare(`select i.id, i.patient_id as "patientId", p.line_user_id as "lineUserId", p.display_name as "displayName", p.avatar_url as "avatarUrl",
-      i.subject, i.category, i.location, i.detail, i.onset, i.urgency, i.status, i.reply_text as "replyText",
+      i.subject, i.category, i.detail, i.onset, i.urgency, i.status, i.reply_text as "replyText",
       i.created_at as "createdAt", i.replied_at as "repliedAt"
       from issues i join patients p on p.id = i.patient_id
-      order by case i.status when 'unanswered' then 1 else 2 end,
+      order by case when i.status = 'answered' then 2 else 1 end,
       case i.urgency when 'red' then 1 when 'yellow' then 2 else 3 end, i.created_at desc`)
       .all(),
     db

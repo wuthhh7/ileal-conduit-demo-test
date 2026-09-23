@@ -6,7 +6,6 @@ import {
 } from '@/lib/line-messages';
 import {
   ensureIssueAttachmentColumn,
-  ensureIssueLocationColumn,
   ensureIssueUrgencyData,
   getD1,
   getRuntimeConfig,
@@ -179,11 +178,10 @@ export async function POST(request: Request) {
   if (body.kind === 'report') {
     const subject = text(body.data, 'subject');
     const category = text(body.data, 'category');
-    const location = text(body.data, 'location');
     const detail = text(body.data, 'detail');
     const onset = text(body.data, 'onset');
     const attachment = imageData(body.data);
-    if (!subject || !REPORT_CATEGORIES.includes(category as (typeof REPORT_CATEGORIES)[number]) || !location || !detail || !onset)
+    if (!subject || !REPORT_CATEGORIES.includes(category as (typeof REPORT_CATEGORIES)[number]) || !detail || !onset)
       return Response.json(
         { error: 'ข้อมูลยังไม่ครบหรือประเภทปัญหาไม่ถูกต้อง กรุณาตรวจทุกช่อง' },
         { status: 400 },
@@ -195,19 +193,17 @@ export async function POST(request: Request) {
       );
     await Promise.all([
       ensureIssueAttachmentColumn(),
-      ensureIssueLocationColumn(),
       ensureIssueUrgencyData(),
     ]);
     const urgency = classifyReport(category, onset, `${subject} ${detail}`);
-    const summary = `แจ้งปัญหาผ่านแบบฟอร์ม\nหัวข้อ: ${subject}\nประเภท: ${category}\nตำแหน่ง: ${location}\nเริ่มพบ: ${onset}\nรายละเอียด: ${detail}${attachment ? '\nรูปประกอบ: แนบแล้ว' : ''}`;
+    const summary = `แจ้งปัญหาผ่านแบบฟอร์ม\nหัวข้อ: ${subject}\nประเภท: ${category}\nเริ่มพบ: ${onset}\nรายละเอียด: ${detail}${attachment ? '\nรูปประกอบ: แนบแล้ว' : ''}`;
     await db
-      .prepare(`insert into issues (patient_id, subject, category, location, detail, onset, urgency, status, image_data, created_at)
-      values (?, ?, ?, ?, ?, ?, ?, 'unanswered', ?, ?)`)
+      .prepare(`insert into issues (patient_id, subject, category, detail, onset, urgency, status, image_data, created_at)
+      values (?, ?, ?, ?, ?, ?, 'unanswered', ?, ?)`)
       .bind(
         patient.id,
         subject.slice(0, 120),
         category.slice(0, 80),
-        location.slice(0, 160),
         detail.slice(0, 1500),
         onset.slice(0, 80),
         urgency,

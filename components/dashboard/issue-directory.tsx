@@ -2,10 +2,8 @@
 
 import Link from 'next/link';
 import {
-  ClipboardCheck,
   CheckCircle2,
   Clock3,
-  MapPin,
   MessageCircleReply,
   Search,
   Send,
@@ -28,7 +26,7 @@ import { formatResponseMinutes } from '@/lib/issue-metrics';
 import { REPORT_CATEGORIES } from '@/lib/triage';
 import styles from './dashboard.module.css';
 
-export function IssueDirectory({ view }: { view: Issue['status'] }) {
+export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [needsLogin, setNeedsLogin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -38,7 +36,6 @@ export function IssueDirectory({ view }: { view: Issue['status'] }) {
   const [urgencyFilter, setUrgencyFilter] = useState<'all' | Issue['urgency']>('all');
   const [activeReply, setActiveReply] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const { notify } = useDashboardNotifications();
 
   const load = useCallback(async () => {
@@ -78,41 +75,16 @@ export function IssueDirectory({ view }: { view: Issue['status'] }) {
     const normalized = query.trim().toLocaleLowerCase('th');
     return issues.filter(
       (issue) =>
-        issue.status === view &&
+        (view === 'answered' ? issue.status === 'answered' : issue.status !== 'answered') &&
         (categoryFilter === 'all' || issue.category === categoryFilter) &&
         (urgencyFilter === 'all' || issue.urgency === urgencyFilter) &&
         (!normalized ||
-          [issue.displayName, issue.subject, issue.category, issue.location, issue.detail]
+          [issue.displayName, issue.subject, issue.category, issue.detail]
             .join(' ')
             .toLocaleLowerCase('th')
             .includes(normalized)),
     );
   }, [categoryFilter, issues, query, urgencyFilter, view]);
-
-  async function startReview(issue: Issue) {
-    setUpdatingId(issue.id);
-    setError('');
-    const response = await fetch(`/api/issues/${encodeURIComponent(issue.id)}`, {
-      method: 'PATCH',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ status: 'in_progress' }),
-    });
-    const body = await response.json().catch(() => ({}));
-    if (response.ok) {
-      notify({
-        title: 'เริ่มตรวจสอบแล้ว',
-        message: `เรื่อง “${issue.subject}” ย้ายไปอยู่ในรายการกำลังตรวจสอบ`,
-        tone: 'success',
-        href: '/dashboard/issues/in-progress',
-      });
-      await load();
-    } else {
-      const message = body.error || 'เปลี่ยนสถานะไม่สำเร็จ กรุณาลองใหม่';
-      setError(message);
-      notify({ title: 'ยังเปลี่ยนสถานะไม่ได้', message, tone: 'urgent' });
-    }
-    setUpdatingId(null);
-  }
 
   async function reply(event: SyntheticEvent<HTMLFormElement>, issue: Issue) {
     event.preventDefault();
@@ -153,20 +125,15 @@ export function IssueDirectory({ view }: { view: Issue['status'] }) {
 
   if (needsLogin) return <DashboardLogin onSuccess={load} />;
   const unanswered = view === 'unanswered';
-  const pageCopy = {
-    unanswered: {
-      title: 'เรื่องที่ยังไม่ตอบกลับ',
-      description: 'ปัญหาที่ผู้ป่วยส่งจาก LINE และยังไม่ได้เริ่มตรวจสอบ',
-    },
-    in_progress: {
-      title: 'กำลังตรวจสอบ',
-      description: 'ปัญหาที่พยาบาลกำลังตรวจสอบก่อนตอบกลับผู้ป่วย',
-    },
-    answered: {
-      title: 'เรื่องที่ตอบกลับแล้ว',
-      description: 'ประวัติเรื่องที่พยาบาลตอบกลับทาง LINE เรียบร้อยแล้ว',
-    },
-  }[view];
+  const pageCopy = unanswered
+    ? {
+        title: 'เรื่องที่ยังไม่ตอบกลับ',
+        description: 'รวมทุกเรื่องที่ผู้ป่วยแจ้งและยังรอคำตอบจากพยาบาล',
+      }
+    : {
+        title: 'เรื่องที่ตอบกลับแล้ว',
+        description: 'ประวัติเรื่องที่พยาบาลตอบกลับทาง LINE เรียบร้อยแล้ว',
+      };
   return (
     <DashboardShell
       title={pageCopy.title}
@@ -237,12 +204,6 @@ export function IssueDirectory({ view }: { view: Issue['status'] }) {
                     เริ่มพบ: {issue.onset}
                   </span>
                 )}
-                {issue.location && (
-                  <span className={styles.issueOnset}>
-                    <MapPin />
-                    ตำแหน่ง: {issue.location}
-                  </span>
-                )}
                 {issue.imageData && (
                   <IssueAttachment
                     src={issue.imageData}
@@ -263,12 +224,6 @@ export function IssueDirectory({ view }: { view: Issue['status'] }) {
                   </div>
                 </Link>
                 <div className={styles.issueActions}>
-                  {unanswered && (
-                    <button onClick={() => void startReview(issue)} disabled={updatingId === issue.id}>
-                      <ClipboardCheck />
-                      {updatingId === issue.id ? 'กำลังอัปเดต…' : 'เริ่มตรวจสอบ'}
-                    </button>
-                  )}
                   {view !== 'answered' ? (
                     <button
                       onClick={() =>

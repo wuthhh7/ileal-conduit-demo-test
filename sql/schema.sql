@@ -40,7 +40,6 @@ CREATE TABLE IF NOT EXISTS issues (
   patient_id text NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
   subject text NOT NULL,
   category text NOT NULL,
-  location text,
   detail text NOT NULL,
   onset text,
   urgency text NOT NULL DEFAULT 'green',
@@ -89,4 +88,3 @@ ALTER TABLE patients ADD COLUMN IF NOT EXISTS avatar_url text;
 ALTER TABLE patients ADD COLUMN IF NOT EXISTS phone text;
 ALTER TABLE patients ADD COLUMN IF NOT EXISTS line_id text;
 ALTER TABLE issues ADD COLUMN IF NOT EXISTS image_data text;
-ALTER TABLE issues ADD COLUMN IF NOT EXISTS location text;

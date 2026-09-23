@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Clapperboard,
-  ClipboardCheck,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -36,12 +35,6 @@ const nav = [
     href: '/dashboard/issues/unanswered',
     label: 'เรื่องที่ยังไม่ตอบกลับ',
     icon: MessageSquareWarning,
-    group: 'ปัญหา',
-  },
-  {
-    href: '/dashboard/issues/in-progress',
-    label: 'กำลังตรวจสอบ',
-    icon: ClipboardCheck,
     group: 'ปัญหา',
   },
   {

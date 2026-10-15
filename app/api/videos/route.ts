@@ -1,5 +1,6 @@
 import { isDashboardAuthorized } from '@/lib/dashboard-auth';
 import { ensureVideoContentTable, getD1 } from '@/lib/server-db';
+import { requireMediaAsset, mediaErrorResponse } from '@/lib/media-storage';
 
 type VideoRow = {
   id: string;
@@ -49,6 +50,11 @@ export async function POST(request: Request) {
   if (!videoUrl) return Response.json({ error: 'กรุณาอัปโหลดไฟล์วิดีโอที่ถูกต้อง' }, { status: 400 });
   if (description.length > 500 || durationLabel.length > 40) return Response.json({ error: 'ข้อความยาวเกินกำหนด' }, { status: 400 });
   if (body.posterUrl && !posterUrl) return Response.json({ error: 'ลิงก์รูปหน้าปกไม่ถูกต้อง' }, { status: 400 });
+
+  try {
+    await requireMediaAsset(videoUrl, 'video');
+    if (posterUrl) await requireMediaAsset(posterUrl, 'poster');
+  } catch (error) { return mediaErrorResponse(error); }
 
   await ensureVideoContentTable();
   const now = new Date().toISOString();

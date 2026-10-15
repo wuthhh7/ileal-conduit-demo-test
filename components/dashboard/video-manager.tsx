@@ -1,7 +1,7 @@
 'use client';
 
 import { Clapperboard, Eye, FileImage, FileVideo, Plus, Trash2 } from 'lucide-react';
-import { upload } from '@vercel/blob/client';
+import { discardMediaUpload, uploadMedia } from '@/lib/media-upload';
 import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SyntheticEvent } from 'react';
@@ -95,11 +95,6 @@ function createRandomPoster(file: File, durationSeconds: number) {
   });
 }
 
-function safeFileName(name: string) {
-  const extension = name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
-  return `${crypto.randomUUID()}.${extension}`;
-}
-
 export function VideoManager() {
   const [videos, setVideos] = useState<VideoContent[]>([]);
   const [form, setForm] = useState(emptyForm);
@@ -144,6 +139,8 @@ export function VideoManager() {
     setSaving(true);
     setError('');
     setNotice('');
+    const uploadedIds: string[] = [];
+    let saved = false;
     try {
       if (!form.videoFile) throw new Error('กรุณาเลือกไฟล์วิดีโอ');
       if (!form.durationLabel || !form.durationSeconds) throw new Error('ไม่สามารถอ่านระยะเวลาจากไฟล์วิดีโอได้');
@@ -153,22 +150,21 @@ export function VideoManager() {
         generatedPoster = await createRandomPoster(form.videoFile, form.durationSeconds);
       }
       setNotice('กำลังอัปโหลดไฟล์วิดีโอ…');
-      const video = await upload(`videos/${safeFileName(form.videoFile.name)}`, form.videoFile, {
-        access: 'public', handleUploadUrl: '/api/videos/upload', multipart: true, clientPayload: 'video',
-      });
+      const video = await uploadMedia(form.videoFile, 'video', (percent) => setNotice(`กำลังอัปโหลดไฟล์วิดีโอ… ${percent}%`));
+      uploadedIds.push(video.id);
       let posterUrl = '';
       if (form.posterFile || generatedPoster) {
         setNotice('กำลังอัปโหลดรูปหน้าปก…');
         const posterFile = form.posterFile || new File([generatedPoster as Blob], `${crypto.randomUUID()}.jpg`, { type: 'image/jpeg' });
-        const poster = await upload(`posters/${safeFileName(posterFile.name)}`, posterFile, {
-          access: 'public', handleUploadUrl: '/api/videos/upload', clientPayload: 'poster',
-        });
+        const poster = await uploadMedia(posterFile, 'poster', (percent) => setNotice(`กำลังอัปโหลดรูปหน้าปก… ${percent}%`));
+        uploadedIds.push(poster.id);
         posterUrl = poster.url;
       }
       const response = await fetch('/api/videos', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: form.title, description: form.description, videoUrl: video.url, posterUrl, durationLabel: form.durationLabel }) });
       const result = await response.json().catch(() => ({})) as { error?: string };
       if (response.status === 401) { setNeedsLogin(true); return; }
       if (!response.ok) throw new Error(result.error || 'เพิ่มคลิปไม่สำเร็จ');
+      saved = true;
       formElement.reset();
       setForm(emptyForm);
       setNotice('เพิ่มคลิปเรียบร้อยแล้ว คลิปจะแสดงใน LINE ทันที');
@@ -176,6 +172,7 @@ export function VideoManager() {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'เพิ่มคลิปไม่สำเร็จ');
     } finally {
+      if (!saved) await Promise.all(uploadedIds.map((id) => discardMediaUpload(id).catch(() => undefined)));
       setSaving(false);
     }
   }

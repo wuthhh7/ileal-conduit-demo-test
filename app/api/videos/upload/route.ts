@@ -1,37 +1,49 @@
-import { handleUpload } from '@vercel/blob/client';
 import { isDashboardAuthorized } from '@/lib/dashboard-auth';
-
-const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v'];
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+import { getD1 } from '@/lib/server-db';
+import {
+  createMediaUpload,
+  completeMediaUpload,
+  deleteMediaAsset,
+  mediaErrorResponse,
+  MediaError,
+  validateMediaId,
+} from '@/lib/media-storage';
 
 export async function POST(request: Request) {
-  if (!(await isDashboardAuthorized(request))) {
+  if (!(await isDashboardAuthorized(request)))
     return Response.json({ error: 'unauthorized' }, { status: 401 });
-  }
-
-  const body = await request.json().catch(() => null);
-  if (!body) return Response.json({ error: 'รูปแบบคำขอไม่ถูกต้อง' }, { status: 400 });
-
   try {
-    const response = await handleUpload({
-      request,
-      body,
-      onBeforeGenerateToken: async (pathname) => {
-        const isVideo = pathname.startsWith('videos/');
-        const isPoster = pathname.startsWith('posters/');
-        if (!isVideo && !isPoster) throw new Error('ไม่อนุญาตให้ใช้โฟลเดอร์นี้');
-
-        return {
-          allowedContentTypes: isVideo ? VIDEO_TYPES : IMAGE_TYPES,
-          maximumSizeInBytes: isVideo ? 250 * 1024 * 1024 : 8 * 1024 * 1024,
-          addRandomSuffix: false,
-          cacheControlMaxAge: 60 * 60 * 24 * 30,
-        };
-      },
-    });
-    return Response.json(response);
+    const body = (await request.json()) as Record<string, unknown>;
+    if (!body || typeof body !== 'object')
+      throw new MediaError('รูปแบบคำขอไม่ถูกต้อง');
+    if (body.action === 'complete' && typeof body.id === 'string')
+      return Response.json(await completeMediaUpload(body.id));
+    if (body.action !== 'init') throw new MediaError('รูปแบบคำขอไม่ถูกต้อง');
+    return Response.json(await createMediaUpload(body), { status: 201 });
   } catch (error) {
-    console.error('Video upload token error', error);
-    return Response.json({ error: 'ไม่สามารถเตรียมพื้นที่อัปโหลดได้' }, { status: 500 });
+    if (error instanceof SyntaxError)
+      return Response.json({ error: 'รูปแบบคำขอไม่ถูกต้อง' }, { status: 400 });
+    return mediaErrorResponse(error);
+  }
+}
+
+export async function DELETE(request: Request) {
+  if (!(await isDashboardAuthorized(request)))
+    return Response.json({ error: 'unauthorized' }, { status: 401 });
+  try {
+    const id = new URL(request.url).searchParams.get('id') || '';
+    validateMediaId(id);
+    const url = `/media/${id}`;
+    const used = await getD1()
+      .prepare(
+        'select id from video_content where video_url = ? or poster_url = ? limit 1',
+      )
+      .bind(url, url)
+      .first();
+    if (used) throw new MediaError('ไฟล์นี้ถูกใช้โดยคลิปที่บันทึกแล้ว', 409);
+    await deleteMediaAsset(id);
+    return Response.json({ ok: true });
+  } catch (error) {
+    return mediaErrorResponse(error);
   }
 }

@@ -5,6 +5,7 @@ import {
   completeMediaUpload,
   createMediaUpload,
   deleteMediaAsset,
+  fetchMediaStorage,
   getMediaManifest,
   requireMediaAsset,
   writeMediaChunk,
@@ -77,6 +78,27 @@ const chunkRequest = (bytes: ArrayBuffer) =>
   new Request('https://test/upload', { method: 'PUT', body: bytes });
 const start = (size: number, kind = 'video', contentType = 'video/mp4') =>
   createMediaUpload({ kind, contentType, size, name: 'synthetic.mp4' });
+
+it('drains a missing-object response before the SDK cancels its tee branch', async () => {
+  const source = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode('not found'));
+      controller.close();
+    },
+  });
+  const [branch, other] = source.tee();
+  const upstream = new Response(branch, { status: 404 });
+  const transport = vi.fn().mockResolvedValue(upstream);
+  vi.stubGlobal('fetch', transport);
+  const detached = await fetchMediaStorage('https://storage.test/key');
+  expect(detached.status).toBe(404);
+  expect(upstream.bodyUsed).toBe(true);
+  await detached.body?.cancel();
+  await other.cancel();
+  expect(transport).toHaveBeenCalledWith('https://storage.test/key', {
+    cache: 'no-store',
+  });
+});
 async function fixture() {
   const bytes = new Uint8Array(MEDIA_CHUNK_SIZE + 11);
   for (let index = 0; index < bytes.length; index++) bytes[index] = index % 251;

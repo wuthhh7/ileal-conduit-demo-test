@@ -18,23 +18,25 @@ export class MediaError extends Error {
     super(message);
   }
 }
+export const fetchMediaStorage: typeof fetch = async (input, init) => {
+  const response = await fetch(input, { ...init, cache: 'no-store' });
+  // Next's instrumented fetch can return a tee'd response. The Blobs SDK
+  // awaits body.cancel() on misses/retries; a tee can wait forever for its
+  // other branch. Drain error responses and detach them before SDK disposal.
+  if (response.status >= 400 && response.body) {
+    return new Response(await response.arrayBuffer(), {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
+  }
+  return response;
+};
 export function mediaStore() {
   return getStore({
     name: MEDIA_STORE,
     consistency: 'strong',
-    fetch: async (input, init) => {
-      // Only transport diagnostics: never log headers, signed queries or file data.
-      const started = Date.now();
-      const host = new URL(String(input)).hostname;
-      console.info('Media storage request', { host, method: init?.method });
-      const response = await fetch(input, { ...init, cache: 'no-store' });
-      console.info('Media storage response', {
-        host,
-        status: response.status,
-        elapsedMs: Date.now() - started,
-      });
-      return response;
-    },
+    fetch: fetchMediaStorage,
   });
 }
 export function validateMediaId(id: string) {
@@ -44,7 +46,6 @@ export async function getMediaManifest(
   id: string,
 ): Promise<MediaManifest | null> {
   validateMediaId(id);
-  console.info('Media manifest read started');
   return mediaStore().get(`${id}/manifest`, { type: 'json' });
 }
 export async function createMediaUpload(body: Record<string, unknown>) {

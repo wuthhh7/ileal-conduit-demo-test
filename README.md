@@ -63,6 +63,14 @@ node scripts/migrate-media-to-netlify.mjs --verify https://ileal-conduit-dashboa
 
 การ copy ตรวจ SHA-256 ทุกส่วนที่อ่านกลับจาก Blobs และการ switch ตรวจไฟล์เต็มกับ byte ranges ผ่านโดเมนจริงก่อนเปลี่ยน URL ใช้ conditional update เพื่อไม่เขียนทับรายการที่เจ้าหน้าที่แก้ระหว่างย้าย เก็บชื่อ วันที่เผยแพร่ ยอดวิว และระยะเวลาคลิปไว้ ไฟล์ต้นฉบับไม่ถูกลบโดยสคริปต์นี้ หลังย้ายสำเร็จให้เอา token ของพื้นที่เก่าออกจาก environment และ redeploy
 
+Production migration verified on 2026-10-15: both library entries use Netlify-hosted media, with zero remaining Vercel Blob references in the video library. The migrated video and poster passed full-file SHA-256 and byte-range checks. The legacy storage token has been removed from Netlify configuration; original source objects remain as a backup and are not used by the app.
+
+Live transport smoke check (creates and removes only its own unlisted synthetic asset; requires the staff password in `.env.local`):
+
+```sh
+node scripts/verify-netlify-media.mjs https://ileal-conduit-dashboard.netlify.app
+```
+
 Webhook: `/api/line/webhook`; LIFF endpoints: `/liff/profile` และ `/liff/symptom` ใช้ URL HTTPS ของ deployment จากนั้นกด Verify ใน LINE Developers Console
 
 ## Automated checks

@@ -77,7 +77,13 @@ export async function createMediaUpload(body: Record<string, unknown>) {
     kind,
     name:
       typeof body.name === 'string'
-        ? body.name.replace(/[\x00-\x1f\x7f]/g, '').slice(0, 180)
+        ? Array.from(body.name)
+            .filter((character) => {
+              const code = character.codePointAt(0)!;
+              return code >= 32 && code !== 127;
+            })
+            .join('')
+            .slice(0, 180)
         : '',
     contentType,
     size,

@@ -2,7 +2,7 @@ import {
   getMediaManifest,
   mediaErrorResponse,
   mediaStore,
-} from './media-storage';
+} from './media-storage.ts';
 
 export function parseMediaRange(
   header: string | null,

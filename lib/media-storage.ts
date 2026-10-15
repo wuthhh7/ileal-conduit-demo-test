@@ -7,7 +7,7 @@ import {
   MEDIA_TYPES,
   type MediaKind,
   type MediaManifest,
-} from './media-config';
+} from './media-config.ts';
 
 type UploadSession = MediaManifest & { expiresAt: number };
 export class MediaError extends Error {

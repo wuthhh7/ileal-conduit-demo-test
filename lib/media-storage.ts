@@ -19,7 +19,23 @@ export class MediaError extends Error {
   }
 }
 export function mediaStore() {
-  return getStore({ name: MEDIA_STORE, consistency: 'strong' });
+  return getStore({
+    name: MEDIA_STORE,
+    consistency: 'strong',
+    fetch: async (input, init) => {
+      // Only transport diagnostics: never log headers, signed queries or file data.
+      const started = Date.now();
+      const host = new URL(String(input)).hostname;
+      console.info('Media storage request', { host, method: init?.method });
+      const response = await fetch(input, { ...init, cache: 'no-store' });
+      console.info('Media storage response', {
+        host,
+        status: response.status,
+        elapsedMs: Date.now() - started,
+      });
+      return response;
+    },
+  });
 }
 export function validateMediaId(id: string) {
   if (!MEDIA_ID.test(id)) throw new MediaError('ไม่พบไฟล์นี้', 404);
@@ -28,6 +44,7 @@ export async function getMediaManifest(
   id: string,
 ): Promise<MediaManifest | null> {
   validateMediaId(id);
+  console.info('Media manifest read started');
   return mediaStore().get(`${id}/manifest`, { type: 'json' });
 }
 export async function createMediaUpload(body: Record<string, unknown>) {

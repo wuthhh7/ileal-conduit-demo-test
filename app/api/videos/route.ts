@@ -33,7 +33,7 @@ export async function GET() {
   await ensureVideoContentTable();
   const videos = await getD1().prepare(`select id, title, description, video_url as "videoUrl", poster_url as "posterUrl",
     duration_label as "durationLabel", views, sort_order as "sortOrder", created_at as "createdAt"
-    from video_content order by sort_order, created_at desc`).all<VideoRow>();
+    from video_content order by created_at desc, id desc`).all<VideoRow>();
   return Response.json({ videos: serialize(videos.results) });
 }
 

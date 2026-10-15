@@ -6,6 +6,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { VideoContent } from '@/lib/video-types';
 import { youtubeId } from '@/lib/video-types';
 
+const publishedDateFormatter = new Intl.DateTimeFormat('th-TH', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'Asia/Bangkok',
+});
+
 export function PatientVideoLibrary() {
   const [videos, setVideos] = useState<VideoContent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,6 +116,10 @@ function VideoCard({
   const id = youtubeId(video.videoUrl);
   const poster =
     video.posterUrl || (id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : '');
+  const publishedAt = new Date(video.createdAt);
+  const publishedDate = Number.isFinite(publishedAt.getTime())
+    ? publishedDateFormatter.format(publishedAt)
+    : null;
 
   function registerView() {
     if (viewed.current) return;
@@ -172,6 +183,11 @@ function VideoCard({
           </span>
         </div>
         <h2>{video.title}</h2>
+        {publishedDate && (
+          <time className="patient-video-published" dateTime={video.createdAt}>
+            เผยแพร่ {publishedDate}
+          </time>
+        )}
         {video.description && <p>{video.description}</p>}
       </div>
     </article>

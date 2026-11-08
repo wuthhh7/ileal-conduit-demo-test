@@ -24,7 +24,7 @@ import {
   ShieldCheck,
   Tickets,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { DashboardLogin } from './dashboard-login';
 import { DashboardShell } from './dashboard-shell';
 import { PatientAvatar } from './patient-avatar';
@@ -164,7 +164,7 @@ export function DashboardAnalytics() {
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
     })
-    .slice(0, 4);
+    .slice(0, 3);
   const latestPatients = patients
     .map((patient) => {
       const patientIssues = issues.filter(
@@ -252,7 +252,10 @@ export function DashboardAnalytics() {
       onRefresh={load}
     >
       {error && <div className={styles.error}>{error}</div>}
-      <section className={styles.dashboardKpis}>
+      <section
+        className={styles.dashboardKpis}
+        aria-label="สรุปปัญหาและการตอบกลับ"
+      >
         <Kpi
           icon={<Tickets />}
           label="ปัญหาทั้งหมด"
@@ -264,6 +267,7 @@ export function DashboardAnalytics() {
           label="ตอบกลับแล้ว"
           value={answered}
           note="ส่งคำตอบเข้า LINE แล้ว"
+          tone="success"
         />
         <Kpi
           icon={<Clock3 />}
@@ -672,6 +676,8 @@ function ComparisonBarChart({
     ]),
     1,
   );
+  const axisStep = Math.max(1, Math.ceil(maxValue / 4));
+  const axisTicks = Array.from({ length: 5 }, (_, index) => index * axisStep);
 
   return (
     <figure
@@ -701,7 +707,7 @@ function ComparisonBarChart({
               minTickGap={8}
               tick={{
                 fill: 'var(--chart-muted)',
-                fontSize: 10,
+                fontSize: '0.8125rem',
                 fontWeight: 650,
               }}
             />
@@ -710,10 +716,11 @@ function ComparisonBarChart({
               tickLine={false}
               width={34}
               allowDecimals={false}
-              domain={[0, Math.max(2, Math.ceil(maxValue * 1.2))]}
+              domain={[0, axisStep * 4]}
+              ticks={axisTicks}
               tick={{
                 fill: 'var(--chart-muted)',
-                fontSize: 10,
+                fontSize: '0.8125rem',
                 fontWeight: 650,
               }}
             />
@@ -740,7 +747,7 @@ function ComparisonBarChart({
                   position="top"
                   offset={7}
                   fill="var(--chart-muted)"
-                  fontSize={11}
+                  fontSize="0.8125rem"
                   fontWeight={700}
                   formatter={(value) =>
                     Number(value) > 0 ? String(value) : ''
@@ -823,36 +830,24 @@ function Kpi({
   label: string;
   value: number;
   note: string;
-  tone?: 'warning' | 'danger' | '';
+  tone?: 'success' | 'warning' | 'danger' | '';
 }) {
   return (
     <article className={tone ? styles[`dashboardKpi_${tone}`] : ''}>
       <div>
         <span>{label}</span>
-        <AnimatedNumber value={value} />
+        <div className={styles.kpiValue}>
+          <AnimatedNumber value={value} />
+          <span>เรื่อง</span>
+        </div>
         <small>{note}</small>
       </div>
-      <i>{icon}</i>
+      <i aria-hidden="true">{icon}</i>
     </article>
   );
 }
 
 function AnimatedNumber({ value }: { value: number }) {
-  const [displayed, setDisplayed] = useState(value);
-
-  useEffect(() => {
-    const startedAt = performance.now();
-    const duration = 720;
-    let frame = 0;
-    const tick = (now: number) => {
-      const progress = Math.min((now - startedAt) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplayed(Math.round(value * eased));
-      if (progress < 1) frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [value]);
-
-  return <b>{displayed}</b>;
+  // Polling never replays misleading zero-to-value counts. Surface motion is CSS.
+  return <b>{value.toLocaleString('th-TH')}</b>;
 }

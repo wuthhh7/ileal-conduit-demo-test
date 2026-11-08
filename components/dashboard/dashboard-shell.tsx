@@ -15,7 +15,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BrandMark } from './brand-mark';
 import { PatientAvatar } from './patient-avatar';
 import {
@@ -69,10 +69,56 @@ export function DashboardShell({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [theme, setTheme] = useState<DashboardTheme>('light');
   const [loggingOut, setLoggingOut] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const { notify } = useDashboardNotifications();
+
+  useEffect(() => {
+    const sidebar = sidebarRef.current;
+    if (!sidebar) return;
+    const media = window.matchMedia('(max-width: 900px)');
+    const previousOverflow = document.body.style.overflow;
+    const syncInert = () => {
+      sidebar.inert = media.matches && !open;
+      document.body.style.overflow =
+        open && media.matches ? 'hidden' : previousOverflow;
+    };
+    syncInert();
+    media.addEventListener('change', syncInert);
+    if (open && media.matches)
+      sidebar.querySelector<HTMLButtonElement>('button')?.focus();
+    function handleKey(event: KeyboardEvent) {
+      if (!open || !media.matches) return;
+      if (event.key === 'Escape') {
+        setOpen(false);
+        menuButtonRef.current?.focus();
+      }
+      if (event.key !== 'Tab' || !sidebar) return;
+      const controls = Array.from(
+        sidebar.querySelectorAll<HTMLElement>('a[href],button:not(:disabled)'),
+      );
+      const first = controls[0],
+        last = controls.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      }
+      if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    }
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      media.removeEventListener('change', syncInert);
+      document.removeEventListener('keydown', handleKey);
+      document.body.style.overflow = previousOverflow;
+      sidebar.inert = false;
+    };
+  }, [open]);
 
   useEffect(() => {
     let timer: number | undefined;
@@ -125,7 +171,14 @@ export function DashboardShell({
 
   return (
     <main className={styles.app} data-theme={theme} data-motion="on">
-      <aside className={`${styles.sidebar} ${open ? styles.sidebarOpen : ''}`}>
+      <a href="#dashboard-content" className={styles.skipLink}>
+        ข้ามไปยังเนื้อหา
+      </a>
+      <aside
+        id="dashboard-navigation"
+        ref={sidebarRef}
+        className={`${styles.sidebar} ${open ? styles.sidebarOpen : ''}`}
+      >
         <div className={styles.brand}>
           <BrandMark className={styles.brandMark} />
           <div>
@@ -140,15 +193,14 @@ export function DashboardShell({
         >
           <X />
         </button>
-        <nav>
+        <nav aria-label="เมนูหลักเจ้าหน้าที่">
           {nav.map((item, index) => {
             const isPatientDetail = /^\/dashboard\/patients\/[^/]+$/.test(
               pathname,
             );
             const startsNewGroup =
               item.group !== undefined && item.group !== nav[index - 1]?.group;
-            const groupLabel =
-              item.group === 'ปัญหา' ? 'ปัญหาผู้ป่วย' : item.group;
+            const groupLabel = item.group === 'ปัญหา' ? 'ปัญหาผู้ป่วย' : item.group;
             const active =
               item.href === '/dashboard/patients'
                 ? pathname === item.href || isPatientDetail
@@ -162,9 +214,10 @@ export function DashboardShell({
                 <Link
                   href={item.href}
                   className={`${active ? styles.navActive : ''} ${item.group ? styles.navChild : ''}`}
+                  aria-current={active ? 'page' : undefined}
                   onClick={() => setOpen(false)}
                 >
-                  <Icon />
+                  <Icon aria-hidden="true" />
                   {item.label}
                 </Link>
               </span>
@@ -210,9 +263,12 @@ export function DashboardShell({
       <section className={styles.workspace}>
         <header className={styles.header}>
           <button
+            ref={menuButtonRef}
             className={styles.menuButton}
             onClick={() => setOpen(true)}
             aria-label="เปิดเมนู"
+            aria-expanded={open}
+            aria-controls="dashboard-navigation"
           >
             <Menu />
           </button>
@@ -241,7 +297,12 @@ export function DashboardShell({
             </button>
           )}
         </header>
-        <div key={pathname} className={styles.content}>
+        <div
+          id="dashboard-content"
+          tabIndex={-1}
+          key={pathname}
+          className={styles.content}
+        >
           {children}
         </div>
       </section>

@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: Tahoma, 'Noto Sans Thai', Arial, sans-serif;
+  --font-sans: var(--font-noto-thai), var(--font-inter), Tahoma, sans-serif;
   --font-mono: Consolas, monospace;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -50,7 +50,8 @@
 
 body {
   font-family:
-    'Leelawadee UI', Tahoma, var(--font-geist-sans), Arial, sans-serif;
+    var(--font-noto-thai), var(--font-inter), 'Leelawadee UI', Tahoma,
+    sans-serif;
 }
 
 :root {
@@ -129,12 +130,12 @@ body {
 .dash-header > div > p,
 .satisfaction p {
   color: #15998d;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.16em;
 }
 .placeholder-card h1 {
-  font-size: 42px;
+  font-size: 2.625rem;
   font-weight: 800;
 }
 .empty-content {
@@ -164,7 +165,7 @@ body {
 }
 .form-shell header h1 {
   margin-top: 6px;
-  font-size: 38px;
+  font-size: 2.375rem;
   font-weight: 800;
 }
 .form-shell header span {
@@ -180,7 +181,7 @@ body {
 }
 .form-shell legend {
   margin-bottom: 13px;
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-weight: 800;
 }
 .ratings {
@@ -202,7 +203,11 @@ body {
   color: #d99716;
   cursor: pointer;
 }
-.ratings svg { width: 17px; height: 17px; fill: currentColor; }
+.ratings svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+}
 .ratings span b {
   color: #66758a;
 }
@@ -248,7 +253,7 @@ body {
 }
 .success h2 {
   margin-top: 18px;
-  font-size: 30px;
+  font-size: 1.875rem;
   font-weight: 800;
 }
 .success p {
@@ -272,7 +277,7 @@ body {
 }
 .login-card h1 {
   margin: 5px 0 24px;
-  font-size: 30px;
+  font-size: 1.875rem;
   font-weight: 800;
 }
 .login-card label {
@@ -303,7 +308,7 @@ body {
   margin: auto;
 }
 .dash-header h1 {
-  font-size: 48px;
+  font-size: 3rem;
   font-weight: 800;
   letter-spacing: -0.03em;
 }
@@ -346,11 +351,11 @@ body {
 }
 .metrics span {
   color: #66758a;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .metrics b {
   margin-top: 7px;
-  font-size: 32px;
+  font-size: 2rem;
 }
 .metrics .danger b,
 .metrics .danger svg {
@@ -369,7 +374,7 @@ body {
   background: linear-gradient(125deg, #114b63, #176b87);
 }
 .satisfaction h2 {
-  font-size: 25px;
+  font-size: 1.5625rem;
   font-weight: 800;
 }
 .satisfaction > div > span,
@@ -378,19 +383,19 @@ body {
 }
 .satisfaction > div > span {
   color: #cce1e7;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .satisfaction > div > b {
-  font-size: 23px;
+  font-size: 1.4375rem;
 }
 .satisfaction .big-score {
-  font-size: 44px;
+  font-size: 2.75rem;
   font-weight: 800;
   color: #82e0d7;
 }
 .satisfaction .big-score span {
   display: inline;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .dash-tools {
   display: flex;
@@ -462,7 +467,7 @@ body {
 }
 .patient-top p {
   color: #66758a;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .avatar {
   display: grid;
@@ -477,7 +482,7 @@ body {
 .patient-top i {
   padding: 5px 9px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-style: normal;
   font-weight: 800;
 }
@@ -510,7 +515,7 @@ body {
   display: block;
 }
 .patient-info span {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: #66758a;
 }
 .patient-info b {
@@ -532,7 +537,7 @@ body {
 }
 .empty-state h2 {
   margin-top: 14px;
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 800;
 }
 .empty-state p {
@@ -564,7 +569,7 @@ body {
 }
 .msg b,
 .msg small {
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 .msg p {
   margin-top: 3px;
@@ -593,13 +598,13 @@ body {
 .liff-card > p {
   margin-top: 18px;
   color: #15998d;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 800;
   letter-spacing: 0.16em;
 }
 .liff-card h1 {
   margin-top: 5px;
-  font-size: 32px;
+  font-size: 2rem;
   font-weight: 800;
 }
 .liff-card small {
@@ -639,7 +644,7 @@ body {
   padding: 28px 24px;
 }
 .intake-page .form-shell header h1 {
-  font-size: 32px;
+  font-size: 2rem;
 }
 .intake-page .form-shell form {
   display: grid;
@@ -704,7 +709,7 @@ body {
   border-radius: 12px;
   background: #fff6dd;
   color: #805b00;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .liff-loading {
   padding: 70px 24px;
@@ -750,7 +755,7 @@ body {
     flex-direction: column;
   }
   .dash-header h1 {
-    font-size: 38px;
+    font-size: 2.375rem;
   }
   .metrics,
   .patient-grid,
@@ -911,7 +916,7 @@ body {
 }
 .form-shell header h1 {
   margin: 0;
-  font-size: clamp(28px, 6vw, 36px);
+  font-size: clamp(1.75rem, 6vw, 2.25rem);
   font-weight: 750;
   letter-spacing: -0.025em;
   line-height: 1.22;
@@ -920,7 +925,7 @@ body {
   display: block;
   margin-top: 8px;
   color: #6b7e88;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .form-shell form {
   display: grid;
@@ -946,19 +951,19 @@ body {
   display: block;
 }
 .intake-title b {
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .intake-title small {
   margin-top: 2px;
   color: #6b7e88;
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 .field-label,
 .comment {
   display: grid;
   gap: 8px;
   color: #263e4a;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 650;
 }
 .field-label input,
@@ -1008,7 +1013,7 @@ body {
   border-radius: 10px;
   background: #fffaf0;
   color: #70551a;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.65;
 }
 .form-shell button[type='submit'],
@@ -1043,7 +1048,7 @@ body {
 .form-shell legend {
   margin-bottom: 12px;
   color: #263e4a;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 700;
 }
 .ratings {
@@ -1068,7 +1073,7 @@ body {
 }
 .ratings span b {
   color: #667985;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .ratings input:checked + span {
   border-color: #147d91;
@@ -1091,7 +1096,7 @@ body {
 }
 .success h2 {
   margin-top: 18px;
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 750;
 }
 .success p {
@@ -1132,7 +1137,7 @@ body {
 }
 .liff-card h1 {
   margin: 0;
-  font-size: 30px;
+  font-size: 1.875rem;
   font-weight: 750;
   letter-spacing: -0.025em;
 }
@@ -1162,7 +1167,7 @@ body {
 .liff-content-card > p {
   margin-top: 8px;
   color: #6b7e88;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .patient-video-library {
   display: grid;
@@ -1185,11 +1190,15 @@ body {
   background: #fff;
   color: #6a8791;
   box-shadow: 0 4px 12px rgb(28 76 92 / 0.035);
-  transition: border-color 180ms ease, box-shadow 180ms ease;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 .patient-video-search:focus-within {
   border-color: #69aeba;
-  box-shadow: 0 0 0 3px rgb(20 125 145 / 0.12), 0 8px 18px rgb(28 76 92 / 0.07);
+  box-shadow:
+    0 0 0 3px rgb(20 125 145 / 0.12),
+    0 8px 18px rgb(28 76 92 / 0.07);
 }
 .patient-video-search > svg {
   flex: 0 0 auto;
@@ -1205,7 +1214,7 @@ body {
   background: transparent;
   color: #284653;
   font: inherit;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .patient-video-search input::placeholder {
   color: #8298a0;
@@ -1219,7 +1228,10 @@ body {
   border-radius: 12px;
   background: #f9fcfc;
   box-shadow: 0 10px 24px rgba(28, 76, 92, 0.08);
-  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
 }
 .patient-video:hover {
   border-color: #89bbc5;
@@ -1243,7 +1255,7 @@ body {
   align-items: center;
   gap: 5px;
   color: #53818d;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
 }
 .patient-video-duration svg {
@@ -1253,21 +1265,21 @@ body {
 .patient-video h2 {
   margin: 9px 0 0;
   color: #173642;
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.35;
   font-weight: 700;
 }
 .patient-video-copy p {
   margin: 7px 0 0;
   color: #6b7e88;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.55;
 }
 .patient-video-published {
   display: block;
   margin-top: 6px;
   color: #536d79;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.5;
 }
 
@@ -1343,24 +1355,24 @@ body {
   }
 }
 
-/* Keep the product's calm, authored page entrance consistent across devices.
-   Interactive motion remains short and functional; the OS setting should not
-   make the web app look unfinished on one device class. */
-body[data-motion='on'] .form-shell,
-body[data-motion='on'] .liff-card,
-body[data-motion='on'] .placeholder-card,
-body[data-motion='on'] .login-card {
-  animation: clinical-enter 0.52s cubic-bezier(0.16, 1, 0.3, 1) both !important;
-}
-body[data-motion='on'] .field-label input,
-body[data-motion='on'] .field-label textarea,
-body[data-motion='on'] .field-label select,
-body[data-motion='on'] .comment textarea,
-body[data-motion='on'] .attachment-picker,
-body[data-motion='on'] .attachment-remove,
-body[data-motion='on'] .form-shell button,
-body[data-motion='on'] .success button {
-  transition-duration: 180ms !important;
+/* Meaningful page motion is opt-in and never overrides the OS preference. */
+@media (prefers-reduced-motion: no-preference) {
+  body[data-motion='on'] .form-shell,
+  body[data-motion='on'] .liff-card,
+  body[data-motion='on'] .placeholder-card,
+  body[data-motion='on'] .login-card {
+    animation: clinical-enter 0.52s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  }
+  body[data-motion='on'] .field-label input,
+  body[data-motion='on'] .field-label textarea,
+  body[data-motion='on'] .field-label select,
+  body[data-motion='on'] .comment textarea,
+  body[data-motion='on'] .attachment-picker,
+  body[data-motion='on'] .attachment-remove,
+  body[data-motion='on'] .form-shell button,
+  body[data-motion='on'] .success button {
+    transition-duration: 180ms !important;
+  }
 }
 
 .patient-video-meta {
@@ -1375,7 +1387,7 @@ body[data-motion='on'] .success button {
   align-items: center;
   gap: 5px;
   color: #477887;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
 }
 .patient-video-views svg {
@@ -1399,7 +1411,9 @@ body[data-motion='on'] .success button {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 240ms ease, filter 180ms ease;
+  transition:
+    transform 240ms ease,
+    filter 180ms ease;
 }
 .patient-video-youtube:hover img {
   transform: scale(1.025);
@@ -1449,10 +1463,12 @@ body[data-motion='on'] .success button {
   display: block;
   margin-top: 6px;
   color: #8298a0;
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 @keyframes video-loading {
-  to { background-position: -160% 0; }
+  to {
+    background-position: -160% 0;
+  }
 }
 @media (max-width: 700px) {
   .patient-video-loading {
@@ -1472,12 +1488,12 @@ body[data-motion='on'] .success button {
   align-items: center;
   justify-content: space-between;
   color: #263e4a;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 650;
 }
 .attachment-heading small {
   color: #788a93;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 500;
 }
 .attachment-picker {
@@ -1491,7 +1507,10 @@ body[data-motion='on'] .success button {
   background: #f7fbfb;
   color: #147d91;
   cursor: pointer;
-  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    transform 0.18s ease;
 }
 .attachment-picker:hover,
 .attachment-picker:focus-within {
@@ -1511,12 +1530,12 @@ body[data-motion='on'] .success button {
   display: block;
 }
 .attachment-picker b {
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .attachment-picker small {
   margin-top: 3px;
   color: #68808a;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 450;
   line-height: 1.5;
 }
@@ -1559,12 +1578,12 @@ body[data-motion='on'] .success button {
 }
 .attachment-preview b {
   color: #263e4a;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .attachment-preview small {
   margin-top: 4px;
   color: #68808a;
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 .attachment-remove {
   display: grid;
@@ -1585,4 +1604,215 @@ body[data-motion='on'] .success button {
 .attachment-remove svg {
   width: 17px;
   height: 17px;
+}
+
+/* Patient surfaces use the same readable scale as the staff workspace. */
+:root {
+  --care-canvas: #f3f8f7;
+  --care-surface: #fff;
+  --care-ink: #173e3a;
+  --care-muted: #526d66;
+  --care-accent: #13766b;
+  --care-line: #dce9e3;
+  --primary: #13766b;
+  --primary-foreground: #fff;
+  --ring: #13766b;
+}
+.form-page,
+.liff-page,
+.placeholder-page {
+  background: var(--care-canvas);
+  color: var(--care-ink);
+  font-size: 1rem;
+  line-height: 1.65;
+  padding: 32px 20px;
+}
+.form-shell,
+.liff-card,
+.placeholder-card {
+  border-color: var(--care-line);
+  border-radius: 20px;
+  box-shadow: 0 10px 32px rgb(23 62 58 / 0.05);
+}
+.form-shell header {
+  background: #edf5f2;
+  border-color: var(--care-line);
+}
+.form-shell header::before {
+  background: var(--care-accent);
+}
+.form-shell header h1,
+.liff-card h1 {
+  color: var(--care-ink);
+  font-size: clamp(1.625rem, 5vw, 2rem);
+  line-height: 1.5;
+}
+.form-shell header span,
+.liff-card > p {
+  color: var(--care-muted);
+  font-size: 1rem;
+  line-height: 1.65;
+  letter-spacing: normal;
+  font-weight: 400;
+}
+.field-label,
+.comment {
+  color: var(--care-ink);
+  font-size: 1rem;
+  line-height: 1.65;
+}
+.field-label input,
+.field-label select,
+.field-label textarea,
+.comment textarea {
+  min-height: 52px;
+  border-color: var(--care-line);
+  border-radius: 10px;
+  color: var(--care-ink);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 400;
+}
+.field-label input::placeholder,
+.field-label textarea::placeholder {
+  color: var(--care-muted);
+  opacity: 1;
+}
+.field-label :is(input, select, textarea):focus-visible,
+.patient-video-search:focus-within {
+  outline: 3px solid var(--care-accent);
+  outline-offset: 3px;
+}
+.intake-title {
+  border-color: var(--care-line);
+  background: #edf5f2;
+}
+.intake-title b {
+  font-size: 1rem;
+}
+.intake-title small,
+.medical-note,
+.attachment-heading small,
+.attachment-preview small,
+.attachment-picker small,
+.liff-card small {
+  font-size: 0.875rem;
+  color: var(--care-muted);
+  line-height: 1.7;
+}
+.attachment-heading span,
+.attachment-picker,
+.attachment-preview b {
+  font-size: 1rem;
+}
+.attachment-remove {
+  width: 44px;
+  height: 44px;
+}
+.form-shell button[type='submit'],
+.form-shell [data-slot='button'],
+.success button,
+.liff-submit {
+  min-height: 52px;
+  border-radius: 10px;
+  background: var(--care-accent);
+  font-size: 1rem;
+  color: #fff;
+}
+.form-shell button[type='submit']:hover,
+.success button:hover {
+  background: #0c5d54;
+}
+.liff-card {
+  padding: 32px;
+}
+.liff-icon {
+  background: var(--care-accent);
+}
+.patient-video-library-shell {
+  margin-top: 28px;
+}
+.patient-video-search {
+  min-height: 52px;
+  border-color: var(--care-line);
+  border-radius: 10px;
+}
+.patient-video-search input {
+  min-height: 50px;
+  font-size: 1rem;
+  color: var(--care-ink);
+}
+.patient-video-search input::placeholder {
+  color: var(--care-muted);
+  opacity: 1;
+}
+.patient-video {
+  border-color: var(--care-line);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 4px 18px rgb(23 62 58 / 0.04);
+}
+.patient-video-copy {
+  padding: 20px;
+}
+.patient-video h2 {
+  color: var(--care-ink);
+  font-size: 1.125rem;
+  font-weight: 650;
+  line-height: 1.6;
+}
+.patient-video-copy > p {
+  margin-top: 10px;
+  color: var(--care-muted);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+.patient-video-published,
+.patient-video-duration,
+.patient-video-views {
+  color: var(--care-muted);
+  font-size: 0.875rem;
+}
+.patient-video-empty {
+  padding: 28px 20px;
+  font-size: 1rem;
+}
+.patient-video-empty small {
+  font-size: 0.875rem;
+}
+@media (max-width: 640px) {
+  .form-page,
+  .liff-page {
+    padding: 0;
+    background: #fff;
+  }
+  .form-shell,
+  .liff-card {
+    min-height: 100dvh;
+    border-radius: 0;
+  }
+  .liff-card {
+    padding: 28px 20px;
+  }
+  .form-shell header {
+    padding: 28px 20px;
+  }
+  .form-shell form {
+    padding: 24px 20px;
+  }
+  .field-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .patient-video-library {
+    gap: 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-motion='on'] *,
+  body[data-motion='on'] *::before,
+  body[data-motion='on'] *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }

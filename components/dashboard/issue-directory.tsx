@@ -33,7 +33,9 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [urgencyFilter, setUrgencyFilter] = useState<'all' | Issue['urgency']>('all');
+  const [urgencyFilter, setUrgencyFilter] = useState<'all' | Issue['urgency']>(
+    'all',
+  );
   const [activeReply, setActiveReply] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
   const { notify } = useDashboardNotifications();
@@ -75,7 +77,9 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
     const normalized = query.trim().toLocaleLowerCase('th');
     return issues.filter(
       (issue) =>
-        (view === 'answered' ? issue.status === 'answered' : issue.status !== 'answered') &&
+        (view === 'answered'
+          ? issue.status === 'answered'
+          : issue.status !== 'answered') &&
         (categoryFilter === 'all' || issue.category === categoryFilter) &&
         (urgencyFilter === 'all' || issue.urgency === urgencyFilter) &&
         (!normalized ||
@@ -125,6 +129,10 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
 
   if (needsLogin) return <DashboardLogin onSuccess={load} />;
   const unanswered = view === 'unanswered';
+  const hasFilters =
+    Boolean(query.trim()) ||
+    categoryFilter !== 'all' ||
+    urgencyFilter !== 'all';
   const pageCopy = unanswered
     ? {
         title: 'เรื่องที่ยังไม่ตอบกลับ',
@@ -143,8 +151,9 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
       {error && <div className={styles.error}>{error}</div>}
       <div className={styles.issueToolbar}>
         <label>
-          <Search />
+          <Search aria-hidden="true" />
           <input
+            aria-label="ค้นหาเรื่องที่ผู้ป่วยแจ้ง"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="ค้นหาชื่อผู้ป่วย หัวข้อ หรือรายละเอียด..."
@@ -152,14 +161,26 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
         </label>
         <label className={styles.selectFilter}>
           ประเภท
-          <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+          <select
+            value={categoryFilter}
+            onChange={(event) => setCategoryFilter(event.target.value)}
+          >
             <option value="all">ทั้งหมด</option>
-            {REPORT_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+            {REPORT_CATEGORIES.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
           </select>
         </label>
         <label className={styles.selectFilter}>
           ระดับ
-          <select value={urgencyFilter} onChange={(event) => setUrgencyFilter(event.target.value as typeof urgencyFilter)}>
+          <select
+            value={urgencyFilter}
+            onChange={(event) =>
+              setUrgencyFilter(event.target.value as typeof urgencyFilter)
+            }
+          >
             <option value="all">ทั้งหมด</option>
             <option value="red">เร่งด่วน</option>
             <option value="yellow">เฝ้าระวัง</option>
@@ -226,6 +247,8 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
                 <div className={styles.issueActions}>
                   {view !== 'answered' ? (
                     <button
+                      aria-expanded={activeReply === issue.id}
+                      aria-controls={`reply-form-${issue.id}`}
                       onClick={() =>
                         setActiveReply((current) =>
                           current === issue.id ? null : issue.id,
@@ -240,6 +263,7 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
               </footer>
               {unanswered && activeReply === issue.id && (
                 <form
+                  id={`reply-form-${issue.id}`}
                   className={styles.issueReplyForm}
                   onSubmit={(event) => reply(event, issue)}
                 >
@@ -266,7 +290,9 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
                     <time>{thaiDate(issue.repliedAt)}</time>
                   </div>
                   <p>{issue.replyText}</p>
-                  <small>ใช้เวลาตอบกลับ {formatResponseMinutes(issue.responseMinutes)}</small>
+                  <small>
+                    ใช้เวลาตอบกลับ {formatResponseMinutes(issue.responseMinutes)}
+                  </small>
                 </div>
               )}
             </article>
@@ -275,10 +301,16 @@ export function IssueDirectory({ view }: { view: 'unanswered' | 'answered' }) {
       ) : (
         <div className={styles.empty}>
           {unanswered ? <MessageCircleReply /> : <CheckCircle2 />}
-          <h2>{unanswered ? 'ไม่มีเรื่องที่รอตอบกลับ' : 'ยังไม่มีเรื่องที่ตอบกลับแล้ว'}</h2>
+          <h2>
+            {hasFilters
+              ? 'ไม่พบเรื่องที่ตรงกับตัวกรอง'
+              : unanswered
+                ? 'ไม่มีเรื่องที่รอตอบกลับ'
+                : 'ยังไม่มีเรื่องที่ตอบกลับแล้ว'}
+          </h2>
           <p>
-            {query
-              ? 'ลองเปลี่ยนคำค้นหา'
+            {hasFilters
+              ? 'ลองเปลี่ยนคำค้นหา ประเภท หรือระดับความสำคัญ'
               : unanswered
                 ? 'เรื่องใหม่จาก LINE จะแสดงที่หน้านี้'
                 : 'เรื่องจะย้ายมาหน้านี้หลังส่งคำตอบสำเร็จ'}

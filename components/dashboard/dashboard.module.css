@@ -118,9 +118,10 @@
 }
 .brandMark {
   display: block;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 44px;
   flex: none;
+  color: var(--accent);
 }
 .brand b {
   font-family: var(--font-inter), sans-serif;
@@ -1908,14 +1909,22 @@
   border-bottom: 1px solid var(--line);
 }
 .loginBrandMark {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 48px;
 }
 .loginBrand strong {
+  display: block;
   font-family: var(--font-inter), sans-serif;
   font-size: 1.25rem;
   font-weight: 650;
   letter-spacing: -0.02em;
+}
+.loginBrand small {
+  display: block;
+  margin-top: 2px;
+  color: var(--secondary-ink);
+  font-size: 0.875rem;
+  font-weight: 400;
 }
 .loginCard h1 {
   color: var(--ink);

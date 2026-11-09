@@ -57,7 +57,10 @@ export function DashboardLogin({
           <BrandMark
             className={`${styles.brandMark} ${styles.loginBrandMark}`}
           />
-          <strong>Ilieal Conduit Care</strong>
+          <div>
+            <strong>Ilieal Conduit Care</strong>
+            <small>ระบบติดตามผู้ป่วย</small>
+          </div>
         </div>
         <h1>เข้าสู่ระบบดูแลผู้ป่วย</h1>
         <span className={styles.loginHint}>
